@@ -1,35 +1,32 @@
 #!/usr/bin/env python3
 
-
 import sys
 import time
 import asyncio
 
 import psutil
 
-async def cpu(refresh=1):
-    ret = psutil.cpu_times()
-    await asyncio.sleep(refresh)
-    return ret
+from plugin_cpu import cpu
+from plugin_percpu import percpu
+from plugin_mem import mem
+from plugin_swap import swap
 
-async def mem(refresh=1):
-    ret = psutil.virtual_memory()
-    await asyncio.sleep(refresh)
-    return ret
-
-async def load(refresh=1):
-    ret = psutil.getloadavg()
+async def glances_stats(plugin, refresh=1):
+    plugin.update()
+    ret = plugin.stats
     await asyncio.sleep(refresh)
     return ret
 
 async def main():
-    stats_list = ['cpu', 'mem', 'load']
-    fct_list = [getattr(sys.modules[__name__], s)() for s in stats_list]
-    ret_list = await asyncio.gather(*fct_list)
+    name_list = ['cpu', 'percpu', 'mem', 'swap']
+    plugins_list = [getattr(sys.modules[__name__], s) for s in name_list]
+    stats_list = [glances_stats(p) for p in plugins_list]
+    ret_list = await asyncio.gather(*stats_list)
     print(ret_list)
 
 if __name__ == "__main__":
     start = time.perf_counter()
-    asyncio.run(main())
+    for i in range(3):
+        asyncio.run(main())
     elapsed = time.perf_counter() - start
     print(f"{__file__} executed in {elapsed:0.2f} seconds.")
