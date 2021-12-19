@@ -10,4 +10,13 @@ class Swap(GlancesPlugin):
         # Init the args
         self.args['psutil_fct'] = [{'name': 'swap_memory'}]
 
+        # Init the views
+        self.args['view_template'] = \
+"""\
+SWAP {percent}
+total {total}
+used {used}
+free {free}\
+"""
+
 swap = Swap()

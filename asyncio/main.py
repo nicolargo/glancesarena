@@ -14,7 +14,7 @@ from plugin_swap import swap
 
 async def glances_stats(plugin, refresh=1):
     plugin.update()
-    ret = plugin.stats
+    ret = plugin.get
     await asyncio.sleep(refresh)
     return ret
 
@@ -24,7 +24,9 @@ async def main():
     plugins_list = [getattr(sys.modules[__name__], s) for s in name_list]
     stats_list = [glances_stats(p) for p in plugins_list]
     ret_list = await asyncio.gather(*stats_list)
-    pprint.pprint(ret_list)
+    # pprint.pprint(ret_list)
+    for ret in ret_list:
+        print(ret['view'])
 
 if __name__ == "__main__":
     start = time.perf_counter()

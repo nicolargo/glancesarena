@@ -11,17 +11,11 @@ class GlancesPlugin(object):
         # Init args (self.args)
         self.init_args()
 
-        # Init the main plugin object
-        # It's a dictionary
-        self._object = {
-            'name': self.__class__.__name__,
-            'stats': None,
-            'time_since_update': None
-        }
-        self._last_update_time = None
-
         # Init the stats (self._stats)
-        self.reset()
+        self.reset_stats()
+
+        # Init the main sbject (self._object)
+        self.init_object()
 
     def init_args(self):
         """Init the args."""
@@ -31,17 +25,33 @@ class GlancesPlugin(object):
             'transform': {
                 'gauge': [],
                 'derived_parameters': []
-            }
+            },
+            'view_template': ''
         }
 
-    def reset(self):
+    def reset_stats(self):
         """Reset/init the stats."""
         self._stats = None
-        self._stats_previous = None
+
+    def init_object(self):
+        """Init the global object."""
+        # It's a dictionary
+        self._object = {
+            'name': self.__class__.__name__,
+            'stats': None,
+            'view': '',
+            'time_since_update': None
+        }
+        # Only used to compute time_since_update
+        self._last_update_time = None
+
+    @property
+    def get(self):
+        return self._object
 
     @property
     def stats(self):
-        return self._object
+        return self._stats
 
     def update(self):
         self._stats_previous = self._stats
@@ -49,6 +59,8 @@ class GlancesPlugin(object):
         self.add_metadata()
         self.transform()
         self.add_stats()
+
+        self.update_view()
 
     def grab_stats(self):
         """Grab the stats."""
@@ -135,3 +147,56 @@ class GlancesPlugin(object):
     def add_stats(self):
         """Update stats in the global object."""
         self._object['stats'] = self._stats
+
+    def update_view(self):
+        """Update the view with the stats."""
+        if 'view_template' in self.args and self.args['view_template'] != '':
+            stats_human = {k: auto_unit(v) for k, v in self._stats.items()}
+            self._object['view'] = self.args['view_template'].format(**stats_human)
+
+
+def auto_unit(number, low_precision=False, min_symbol='K'):
+    """Make a nice human-readable string out of number.
+    Number of decimal places increases as quantity approaches 1.
+    CASE: 613421788        RESULT:       585M low_precision:       585M
+    CASE: 5307033647       RESULT:      4.94G low_precision:       4.9G
+    CASE: 44968414685      RESULT:      41.9G low_precision:      41.9G
+    CASE: 838471403472     RESULT:       781G low_precision:       781G
+    CASE: 9683209690677    RESULT:      8.81T low_precision:       8.8T
+    CASE: 1073741824       RESULT:      1024M low_precision:      1024M
+    CASE: 1181116006       RESULT:      1.10G low_precision:       1.1G
+    :low_precision: returns less decimal places potentially (default is False)
+                    sacrificing precision for more readability.
+    :min_symbol: Do not approach if number < min_symbol (default is K)
+    """
+    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    if min_symbol in symbols:
+        symbols = symbols[symbols.index(min_symbol) :]
+    prefix = {
+        'Y': 1208925819614629174706176,
+        'Z': 1180591620717411303424,
+        'E': 1152921504606846976,
+        'P': 1125899906842624,
+        'T': 1099511627776,
+        'G': 1073741824,
+        'M': 1048576,
+        'K': 1024,
+    }
+
+    for symbol in reversed(symbols):
+        value = float(number) / prefix[symbol]
+        if value > 1:
+            decimal_precision = 0
+            if value < 10:
+                decimal_precision = 2
+            elif value < 100:
+                decimal_precision = 1
+            if low_precision:
+                if symbol in 'MK':
+                    decimal_precision = 0
+                else:
+                    decimal_precision = min(1, decimal_precision)
+            elif symbol in 'K':
+                decimal_precision = 0
+            return '{:.{decimal}f}{symbol}'.format(value, decimal=decimal_precision, symbol=symbol)
+    return '{!s}'.format(number)
