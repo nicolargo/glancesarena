@@ -4,8 +4,8 @@ from plugin import GlancesPlugin
 
 class Swap(GlancesPlugin):
 
-    def __init__(self, args=None):
-        super(Swap, self).__init__(args=args)
+    def __init__(self):
+        super(Swap, self).__init__()
 
         # Init the args
         self.args['psutil_fct'] = [{'name': 'swap_memory'}]

@@ -4,15 +4,16 @@ from plugin import GlancesPlugin
 
 class Cpu(GlancesPlugin):
 
-    def __init__(self, args=None):
-        super(Cpu, self).__init__(args=args)
+    def __init__(self):
+        super(Cpu, self).__init__()
 
-        # Init the stats
-        self.args['psutil_fct'] = [{'name': 'cpu_times'},
+        # Set the PsUtil functions used to grab the stats
+        self.args['psutil_fct'] = [{'name': 'cpu_percent', 'args': {'interval': 0.0}},
+                                   {'name': 'cpu_times_percent', 'args': {'interval': 0.0}},
                                    {'name': 'cpu_stats'}]
 
-    def transform(self):
-        """Transform the CPU stats."""
-        pass
+        # Transform the stats
+        # Gauge: for each gauge field, create an extra field with the rate per second
+        self.args['transform'].update({'gauge': ['ctx_switches', 'interrupts', 'soft_interrupts', 'syscalls']})
 
 cpu = Cpu()

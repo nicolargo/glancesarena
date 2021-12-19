@@ -3,6 +3,7 @@
 import sys
 import time
 import asyncio
+import pprint
 
 import psutil
 
@@ -19,10 +20,11 @@ async def glances_stats(plugin, refresh=1):
 
 async def main():
     name_list = ['cpu', 'percpu', 'mem', 'swap']
+    # name_list = ['percpu']
     plugins_list = [getattr(sys.modules[__name__], s) for s in name_list]
     stats_list = [glances_stats(p) for p in plugins_list]
     ret_list = await asyncio.gather(*stats_list)
-    print(ret_list)
+    pprint.pprint(ret_list)
 
 if __name__ == "__main__":
     start = time.perf_counter()
