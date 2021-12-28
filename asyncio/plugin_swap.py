@@ -13,10 +13,10 @@ class Swap(GlancesPlugin):
         # Init the views
         self.args['view_template'] = \
 """\
-SWAP {percent}
-total {total}
-used {used}
-free {free}\
+SWAP  {percent:>5}
+total {total:>5}
+used  {used:>5}
+free  {free:>5}\
 """
 
 swap = Swap()

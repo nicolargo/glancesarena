@@ -55,11 +55,18 @@ class GlancesPlugin(object):
 
     def update(self):
         self._stats_previous = self._stats
+
+        # Stats
+        #######
+        # Stats ET(not L)
         self.grab_stats()
         self.add_metadata()
         self.transform()
+        # Stats (not ET)L
         self.add_stats()
 
+        # Views
+        #######
         self.update_view()
 
     def grab_stats(self):
@@ -150,12 +157,41 @@ class GlancesPlugin(object):
 
     def update_view(self):
         """Update the view with the stats."""
+        # There is a layout, use it to build the template
+        if 'view_layout' in self.args:
+            self.layout_to_template()
+
+        # Convert the template to a string
         if 'view_template' in self.args and self.args['view_template'] != '':
             stats_human = {k: auto_unit(v) for k, v in self._stats.items()}
             self._object['view'] = self.args['view_template'].format(**stats_human)
 
+    def layout_to_template(self):
+        """Convert the layout to a template."""
+        self.args['view_template'] = ''
+        lines_number = max([len(i['lines']) for i in self.args['view_layout'] if 'lines' in i])
+        for line in range(lines_number):
+            first_column = True
+            for column in self.args['view_layout']:
+                if line > len(column['lines']) - 1:
+                    continue
+                # Manage space between columns
+                if not first_column:
+                    self.args['view_template'] += ' '
+                else:
+                    first_column = False
+                # Add lines
+                label = column['lines'][line][0]
+                value = column['lines'][line][1]
+                self.args['view_template'] += '{label:{fill}{align}{width}}'.format(label=label,
+                                                                                    fill=' ',
+                                                                                    align='<',
+                                                                                    width=column['width'])
+                self.args['view_template'] += value
+            self.args['view_template'] += '\n'
 
-def auto_unit(number, low_precision=False, min_symbol='K'):
+
+def auto_unit(number, low_precision=False, min_symbol='K', none_representation='-'):
     """Make a nice human-readable string out of number.
     Number of decimal places increases as quantity approaches 1.
     CASE: 613421788        RESULT:       585M low_precision:       585M
@@ -169,6 +205,8 @@ def auto_unit(number, low_precision=False, min_symbol='K'):
                     sacrificing precision for more readability.
     :min_symbol: Do not approach if number < min_symbol (default is K)
     """
+    if number is None:
+        return none_representation
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     if min_symbol in symbols:
         symbols = symbols[symbols.index(min_symbol) :]

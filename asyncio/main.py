@@ -26,6 +26,7 @@ async def main():
     ret_list = await asyncio.gather(*stats_list)
     # pprint.pprint(ret_list)
     for ret in ret_list:
+        print(ret['stats'])
         print(ret['view'])
 
 if __name__ == "__main__":
