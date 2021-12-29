@@ -28,36 +28,24 @@ class Cpu(GlancesPlugin):
         # Init the views
         self.args['view_layout'] = [# First column
                                     {
-                                        'width': 12,
-                                        'lines': [('CPU', '{cpu_percent:>5}'),
-                                                  ('user', '{user:>5}'),
-                                                  ('system', '{system:>5}'),
-                                                  ('iowait', '{iowait:>5}')]
+                                        'lines': [['CPU', '{cpu_percent:>5}'],
+                                                  ['user', '{user:>5}'],
+                                                  ['system', '{system:>5}'],
+                                                  ['iowait', '{iowait:>5}']]
                                     },
                                     # Second column
                                     {
-                                        'width': 12,
-                                        'lines': [('idle', '{idle:>5}'),
-                                                  ('irq', '{irq:>5}'),
-                                                  ('nice', '{nice:>5}'),
-                                                  ('steal', '{steal:>5}')]
+                                        'lines': [['idle', '{idle:>5}'],
+                                                  ['irq', '{irq:>5}'],
+                                                  ['nice', '{nice:>5}'],
+                                                  ['steal', '{steal:>5}']]
                                     },
-                                    # Third column
                                     {
                                         'width': 12,
-                                        'lines': [('ctx_sw', '{ctx_switches:>5}'),
-                                                  ('inter', '{interrupts:>5}'),
-                                                  ('sw_inter', '{soft_interrupts:>5}')]
+                                        'lines': [['ctx_sw', '{ctx_switches:>5}'],
+                                                  ['inter', '{interrupts:>5}'],
+                                                  ['sw_int', '{soft_interrupts:>5}']]
                                     },
                                     ]
-
-        # . will be removed (just here to simplify the alignment)
-#         self.args['view_template'] = \
-# """\
-# CPU    {cpu_percent:>5} idle  {idle:>5} ...ctx_sw   {ctx_switches:>5}
-# user   {user:>5} .......irq   {softirq:>5} inter    {interrupts:>5}
-# system {system:>5} .....nice  {nice:>5} ...sw_inter {soft_interrupts:>5}
-# iowait {iowait:>5} .....steal {steal:>5}\
-# """.replace('.', '')
 
 cpu = Cpu()

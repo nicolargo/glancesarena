@@ -26,6 +26,7 @@ class GlancesPlugin(object):
                 'gauge': [],
                 'derived_parameters': []
             },
+            'view_layout': [],
             'view_template': ''
         }
 
@@ -39,7 +40,8 @@ class GlancesPlugin(object):
         self._object = {
             'name': self.__class__.__name__,
             'stats': None,
-            'view': '',
+            'view': None,
+            'view_curses': None,
             'time_since_update': None
         }
         # Only used to compute time_since_update
@@ -157,38 +159,61 @@ class GlancesPlugin(object):
 
     def update_view(self):
         """Update the view with the stats."""
-        # There is a layout, use it to build the template
+        # There is a layout, use it to build all others views
         if 'view_layout' in self.args:
-            self.layout_to_template()
+            self.layout_to_view()
 
-        # Convert the template to a string
-        if 'view_template' in self.args and self.args['view_template'] != '':
-            stats_human = {k: auto_unit(v) for k, v in self._stats.items()}
-            self._object['view'] = self.args['view_template'].format(**stats_human)
+        # Update the curses view
+        self.view_to_curses()
 
-    def layout_to_template(self):
-        """Convert the layout to a template."""
-        self.args['view_template'] = ''
-        lines_number = max([len(i['lines']) for i in self.args['view_layout'] if 'lines' in i])
+    def layout_to_view(self):
+        """Convert the layout to a view (mother for all king of views).
+        Layout:
+            A layout is a list of columns (dict).
+            A column is composed of lines (list of list).
+            A column may contain is width and is lenght.
+        View:
+            A view is a list of lines (dict)
+            A line is...
+        """
+        stats_human = {k: auto_unit(v) for k, v in self._stats.items()}
+        self._object['view'] = self.args['view_layout']
+        for column in self._object['view']:
+            for line in column['lines']:
+                # Replace layout value by the current value
+                line[1] = line[1].format(**stats_human)
+            if 'lenght' not in column:
+                # lenght is not provided, compute it
+                column['lenght'] = len(column['lines'])
+            if 'width' not in column:
+                # Width is not provided, compute it
+                column['width'] = max([len(' '.join(line)) for line in column['lines']])
+
+    def view_to_curses(self):
+        """Convert the layout to a view (mother for all king of views)."""
+        self._object['view_curses'] = ''
+        lines_number = max([len(i['lines']) for i in self._object['view'] if 'lines' in i])
         for line in range(lines_number):
             first_column = True
-            for column in self.args['view_layout']:
+            for column in self._object['view']:
                 if line > len(column['lines']) - 1:
+                    # No more stats for this column
                     continue
                 # Manage space between columns
                 if not first_column:
-                    self.args['view_template'] += ' '
+                    self._object['view_curses'] += ' '
                 else:
                     first_column = False
                 # Add lines
                 label = column['lines'][line][0]
                 value = column['lines'][line][1]
-                self.args['view_template'] += '{label:{fill}{align}{width}}'.format(label=label,
-                                                                                    fill=' ',
-                                                                                    align='<',
-                                                                                    width=column['width'])
-                self.args['view_template'] += value
-            self.args['view_template'] += '\n'
+                label_width = column['width'] - len(value) + 1
+                self._object['view_curses'] += '{label:{fill}{align}{width}}{value}'.format(label=label,
+                                                                                            fill=' ',
+                                                                                            align='<',
+                                                                                            width=label_width,
+                                                                                            value=value)
+            self._object['view_curses'] += '\n'
 
 
 def auto_unit(number, low_precision=False, min_symbol='K', none_representation='-'):
