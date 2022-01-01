@@ -55,14 +55,17 @@ class GlancesPlugin(object):
         return self._stats
 
     def update(self):
-        self._stats_previous = self._stats
-
         # Stats
         #######
+
+        # Store the old stat values in order to compute rates
+        self._stats_previous = self._stats
+
         # Stats ET(not L)
         self.grab_stats()
         self.add_metadata()
         self.transform()
+
         # Stats (not ET)L
         self.add_stats()
 
@@ -84,51 +87,62 @@ class GlancesPlugin(object):
             # Get the PsUtil function name and args
             psutil_fct_name = psutil_fct['name']
             psutil_fct_args = psutil_fct.get('args', {})
-            if psutil_fct_name in dir(psutil):
-                # The PsUtil function is available
-                # Grab the PsUtil stats
-                psutil_stats = getattr(psutil, psutil_fct_name)(**psutil_fct_args)
 
-                # Convert in a standard object (dict or list of dict)
-                if psutil_stats is None:
-                    # TODO: log error
-                    pass
-                elif isinstance(psutil_stats, list):
-                    psutil_stats = [s._asdict() if (s is not None and hasattr(s, '_asdict')) else {psutil_fct_name: s} for s in psutil_stats]
-                elif hasattr(psutil_stats, '_asdict'):
-                    psutil_stats = psutil_stats._asdict()
+            if psutil_fct_name not in dir(psutil):
+                # @TODO: add a logger (psutil fct do not exist or being supported)
+                continue
+
+            # The PsUtil function is available
+            # Execute it
+            psutil_stats = getattr(psutil, psutil_fct_name)(**psutil_fct_args)
+
+            # Convert in a standard object (dict or list of dict)
+            if psutil_stats is None:
+                # TODO: log error
+                pass
+            elif isinstance(psutil_stats, list):
+                # The PsUtil return a list, convert result to a list of dict (if possible)
+                psutil_stats = [s._asdict() if (s is not None and hasattr(s, '_asdict')) else {psutil_fct_name: s} for s in psutil_stats]
+            elif hasattr(psutil_stats, '_asdict'):
+                # The PsUtil can return a dict representation, use it
+                psutil_stats = psutil_stats._asdict()
+            else:
+                if 'key' in psutil_fct:
+                    # A key is provided, use the PsUtil dict key as stat key
+                    # and add the 'key' field (content the key value)
+                    # Ex: For Network, 'key' = 'interface_name', 'interface_name': 'eth0'
+                    stats_temp = []
+                    for k, v in psutil_stats.items():
+                        value_temp = v._asdict()
+                        value_temp['key'] = psutil_fct['key']
+                        value_temp[psutil_fct['key']] = k
+                        stats_temp.append(value_temp)
+                    psutil_stats = stats_temp
                 else:
-                    if 'key' in psutil_fct:
-                        # A key is provided, use the PsUtil dict key as stat key
-                        stats_temp = []
-                        for k, v in psutil_stats.items():
-                            value_temp = v._asdict()
-                            value_temp['key'] = psutil_fct['key']
-                            value_temp[psutil_fct['key']] = k
-                            stats_temp.append(value_temp)
-                        psutil_stats = stats_temp
-                    else:
-                        psutil_stats = {psutil_fct_name: psutil_stats}
+                    psutil_stats = {psutil_fct_name: psutil_stats}
 
-                # Update the stats
-                if isinstance(stats, dict):
-                    # It's a dict
-                    # Merge the PsUtil stats with the existing stats
-                    stats.update(psutil_stats)
-                elif isinstance(stats, list):
-                    # It's a list of dict
-                    # Merge dicts in the list
-                    if stats == []:
-                        stats += psutil_stats
-                    else:
-                        for i in range(len(stats)):
-                            stats[i].update(psutil_stats[i])
+            # Update the stats
+            if isinstance(stats, dict):
+                # It's a dict
+                # Merge the PsUtil stats with the existing stats
+                # So only one dict will be returned
+                stats.update(psutil_stats)
+            elif isinstance(stats, list):
+                # It's a list of dict
+                #
+                if stats == []:
+                    stats += psutil_stats
                 else:
-                    # Others cases...
-                    # Just copy the PsUtil stats to the existing stats
-                    stats = psutil_stats
+                    for i in range(len(stats)):
+                        stats[i].update(psutil_stats[i])
+            else:
+                # Others cases...
+                # Just copy the PsUtil stats to the existing stats
+                stats = psutil_stats
 
+        # Update the stats only at the end
         self._stats = stats
+
         return self._stats
 
     def add_metadata(self):
@@ -143,7 +157,9 @@ class GlancesPlugin(object):
 
     def transform(self):
         """Transform the stats."""
+        # Compute rate
         self._transform_gauge()
+        # Evaluate all derived parameters
         self._derived_parameters()
 
     def _transform_gauge(self):
@@ -222,10 +238,7 @@ class GlancesPlugin(object):
                 view.append(line)
 
         # Compute padding
-        fields_size = [[len(i) for i in l['raw']] for l in view]
-        fields_padding = [max([c[i] for c in fields_size if len(c) > i ]) for i in range(len(fields_size[0]))]
-        for line in view:
-            line['padding'] = fields_padding
+        set_line_padding(view)
 
         # Update the plugin's object
         self._object['view'] = view
@@ -278,6 +291,14 @@ def build_line(columns, line_nb, stats_human):
     return line
 
 
+def set_line_padding(view):
+    """Set the padding of each fields"""
+    fields_size = [[len(i) for i in l['raw']] for l in view]
+    fields_padding = [max([c[i] for c in fields_size if len(c) > i ]) for i in range(len(fields_size[0]))]
+    for line in view:
+        line['padding'] = fields_padding
+
+
 def build_raw_view(lines_layout, stats_human, no_stat_human='-'):
     """Convert the lines_layout to human reading stats list"""
     raw = []
@@ -310,6 +331,7 @@ def auto_unit(number,
     :low_precision: returns less decimal places potentially (default is False)
                     sacrificing precision for more readability.
     :min_symbol: Do not approach if number < min_symbol (default is K)
+    :none_representation: what is returned if number is None
     """
     if number is None:
         return none_representation
@@ -348,5 +370,9 @@ def auto_unit(number,
                     decimal_precision = min(1, decimal_precision)
             elif symbol in 'K':
                 decimal_precision = 0
-            return '{:.{decimal}f}{symbol}'.format(value, decimal=decimal_precision, symbol=symbol)
-    return '{:.{decimal}f}{symbol}'.format(value, decimal=decimal_precision, symbol='')
+            return '{:.{decimal}f}{symbol}'.format(value,
+                                                   decimal=decimal_precision,
+                                                   symbol=symbol)
+    return '{:.{decimal}f}{symbol}'.format(value,
+                                           decimal=decimal_precision,
+                                           symbol='')

@@ -20,8 +20,7 @@ async def glances_stats(plugin, refresh=1):
     return ret
 
 async def main():
-    name_list = ['cpu', 'percpu', 'mem', 'swap']
-    name_list = ['network', 'mem']
+    name_list = ['cpu', 'percpu', 'mem', 'swap', 'network']
     plugins_list = [getattr(sys.modules[__name__], s) for s in name_list]
     stats_list = [glances_stats(p) for p in plugins_list]
     ret_list = await asyncio.gather(*stats_list)

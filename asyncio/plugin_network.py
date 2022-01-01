@@ -5,7 +5,12 @@ from plugin import GlancesPlugin
 class Network(GlancesPlugin):
 
     """Network (interface) plugin
-    Stats example:
+    Stat example:
+    [{'bytes_sent': 58292942, 'bytes_recv': 20339125, 'packets_sent': 161827,
+      'packets_recv': 28452, 'errin': 0, 'errout': 0, 'dropin': 0, 'dropout': 0,
+      'key': 'interface_name', 'interface_name': 'veth2845bac', 'isup': True,
+      'duplex': 'FULL', 'speed': 10485760000, 'mtu': 1500, 'bytes_recv_rate': 0.0,
+      'bytes_sent_rate': 0.0, 'cumulative_cx': 78742607, 'cumulative_cx_rate': 0.0}, ... ]
     """
 
     def __init__(self):
@@ -21,9 +26,13 @@ class Network(GlancesPlugin):
 
         # Transform the stats
         # Gauge: for each gauge field, create an extra field with the rate per second
-        self.args['transform'].update({'gauge': ['bytes_recv', 'bytes_sent']})
+        self.args['transform'].update({'gauge': ['bytes_recv',
+                                                 'bytes_sent']})
         # Add some derived parameters stats (functions defined below)
-        self.args['transform'].update({'derived_parameters': ['speed', 'duplex']})
+        self.args['transform'].update({'derived_parameters': ['speed',
+                                                              'duplex',
+                                                              'cumulative_cx',
+                                                              'cumulative_cx_rate']})
 
         # Init the view layout
         self.args['view_layout'] = {
@@ -55,12 +64,19 @@ class Network(GlancesPlugin):
     def speed(self):
         """Interface speed in Mbps, convert it to bps
         Can be always 0 on some OSes"""
-        return [s['speed'] * 1048576 if 'speed' in s else '-' for s in self.stats]
-
+        return [i['speed'] * 1048576 if 'speed' in i else '-' for i in self.stats]
 
     def duplex(self):
         """Interface mode
         See documentation here: https://psutil.readthedocs.io/en/latest/#psutil.net_if_stats"""
-        return [str(s['duplex']).split('_')[-1] if 'duplex' in s else '-' for s in self.stats]
+        return [str(i['duplex']).split('_')[-1] if 'duplex' in i else '-' for i in self.stats]
+
+    def cumulative_cx(self):
+        """Rx+Tx"""
+        return [i['bytes_recv'] + i['bytes_sent'] for i in self.stats]
+
+    def cumulative_cx_rate(self):
+        """Rx+Tx rate"""
+        return [i['bytes_recv_rate'] + i['bytes_sent_rate'] if i['bytes_recv_rate'] is not None else 0 for i in self.stats]
 
 network = Network()

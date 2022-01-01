@@ -5,7 +5,7 @@ from plugin import GlancesPlugin
 class Cpu(GlancesPlugin):
 
     """CPU plugin
-    Stats example:
+    Stat example:
     {'cpu_percent': 0.0, 'user': 0.0, 'nice': 0.0, 'system': 0.0, 'idle': 0.0,
      'iowait': 0.0, 'irq': 0.0, 'softirq': 0.0, 'steal': 0.0, 'guest': 0.0,
      'guest_nice': 0.0, 'ctx_switches': 3271803998, 'interrupts': 1205799541,

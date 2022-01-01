@@ -4,6 +4,12 @@ from plugin import GlancesPlugin
 
 class Swap(GlancesPlugin):
 
+    """Mem (SWAP) plugin
+    Stat example:
+    {'total': 8082419712, 'used': 1379536896, 'free': 6702882816,
+     'percent': 17.1, 'sin': 2959507456, 'sout': 6242086912}
+    """
+
     def __init__(self):
         super(Swap, self).__init__()
 

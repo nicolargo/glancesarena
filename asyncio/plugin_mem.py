@@ -4,6 +4,15 @@ from plugin import GlancesPlugin
 
 class Mem(GlancesPlugin):
 
+    """Mem (RAM) plugin
+    Stat example:
+    {'total': 7849021440, 'available': 1066557440, 'percent': 86.4,
+     'used': 5848440832, 'free': 159309824, 'active': 5579571200,
+     'inactive': 1299025920, 'buffers': 420143104, 'cached': 1421127680,
+     'shared': 622452736, 'slab': 500400128, 'free_abc': 2907828224,
+     'used_abc': 4941193216}
+    """
+
     def __init__(self):
         super(Mem, self).__init__()
 
