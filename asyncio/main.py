@@ -11,6 +11,7 @@ from plugin_cpu import cpu
 from plugin_percpu import percpu
 from plugin_mem import mem
 from plugin_swap import swap
+from plugin_network import network
 
 async def glances_stats(plugin, refresh=1):
     plugin.update()
@@ -19,8 +20,8 @@ async def glances_stats(plugin, refresh=1):
     return ret
 
 async def main():
-    # name_list = ['cpu', 'percpu', 'mem', 'swap']
-    name_list = ['swap']
+    name_list = ['cpu', 'percpu', 'mem', 'swap']
+    name_list = ['network', 'mem']
     plugins_list = [getattr(sys.modules[__name__], s) for s in name_list]
     stats_list = [glances_stats(p) for p in plugins_list]
     ret_list = await asyncio.gather(*stats_list)

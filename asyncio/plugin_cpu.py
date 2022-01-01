@@ -25,27 +25,30 @@ class Cpu(GlancesPlugin):
         # Gauge: for each gauge field, create an extra field with the rate per second
         self.args['transform'].update({'gauge': ['ctx_switches', 'interrupts', 'soft_interrupts', 'syscalls']})
 
-        # Init the views
-        self.args['view_layout'] = [# First column
-                                    {
-                                        'lines': [['CPU', '{cpu_percent:>5}'],
-                                                  ['user', '{user:>5}'],
-                                                  ['system', '{system:>5}'],
-                                                  ['iowait', '{iowait:>5}']]
-                                    },
-                                    # Second column
-                                    {
-                                        'lines': [['idle', '{idle:>5}'],
-                                                  ['irq', '{irq:>5}'],
-                                                  ['nice', '{nice:>5}'],
-                                                  ['steal', '{steal:>5}']]
-                                    },
-                                    {
-                                        'width': 12,
-                                        'lines': [['ctx_sw', '{ctx_switches:>5}'],
-                                                  ['inter', '{interrupts:>5}'],
-                                                  ['sw_int', '{soft_interrupts:>5}']]
-                                    },
-                                    ]
+        # Init the view layout
+        self.args['view_layout'] = {
+            'columns': [
+                # First column
+                {
+                    'lines': [['CPU', '{cpu_percent}'],
+                              ['user', '{user}'],
+                              ['system', '{system}'],
+                              ['iowait', '{iowait}']]
+                },
+                # Second column
+                {
+                    'lines': [['idle', '{idle}'],
+                              ['irq', '{irq}'],
+                              ['nice', '{nice}'],
+                              ['steal', '{steal}']]
+                },
+                # Third column
+                {
+                    'lines': [['ctx_sw', '{ctx_switches}'],
+                              ['inter', '{interrupts}'],
+                              ['sw_int', '{soft_interrupts}']]
+                },
+            ]
+        }
 
 cpu = Cpu()

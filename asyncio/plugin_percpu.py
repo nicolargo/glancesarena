@@ -11,4 +11,38 @@ class PerCpu(GlancesPlugin):
         self.args['psutil_fct'] = [{'name': 'cpu_percent', 'args': {'percpu': True, 'interval': 0.0}},
                                    {'name': 'cpu_times_percent', 'args': {'percpu': True, 'interval': 0.0}}]
 
+        # Init the view layout
+        # user system   idle iowait  steal
+        self.args['view_layout'] = {
+            # We will iterate the second line (index of first line is 0)
+            'line_to_iter': 1,
+            'columns': [
+                # First column
+                {
+                    'lines': [['user'],
+                              ['{user}']],
+                },
+                # Second column
+                {
+                    'lines': [['system'],
+                              ['{system}']],
+                },
+                # Third column
+                {
+                    'lines': [['idle'],
+                              ['{idle}']],
+                },
+                # Fourth column
+                {
+                    'lines': [['iowait'],
+                              ['{iowait}']],
+                },
+                # Fifth column
+                {
+                    'lines': [['steal'],
+                              ['{steal}']],
+                }
+            ]
+        }
+
 percpu = PerCpu()

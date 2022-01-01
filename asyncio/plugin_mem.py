@@ -14,6 +14,26 @@ class Mem(GlancesPlugin):
         # Add some derived parameters stats (functions defined below)
         self.args['transform'].update({'derived_parameters': ['free_abc', 'used_abc']})
 
+        # Init the view layout
+        self.args['view_layout'] = {
+            'columns': [
+                # First column
+                {
+                    'lines': [['MEM', '{percent}'],
+                            ['total', '{total}'],
+                            ['used', '{used_abc}'],
+                            ['free', '{free_abc}']]
+                },
+                # Second column
+                {
+                    'lines': [['active', '{active}'],
+                            ['inactive', '{inactive}'],
+                            ['buffer', '{buffers}'],
+                            ['cached', '{cached}']]
+                }
+            ]
+        }
+
     ###############################
     # Derived parameters definition
     ###############################

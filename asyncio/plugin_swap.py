@@ -11,13 +11,16 @@ class Swap(GlancesPlugin):
         self.args['psutil_fct'] = [{'name': 'swap_memory'}]
 
         # Init the view layout
-        self.args['view_layout'] = [# Only one column
-                                    {
-                                        'lines': [['SWAP', '{percent:>5}'],
-                                                  ['total', '{total:>5}'],
-                                                  ['used', '{used:>5}'],
-                                                  ['free', '{free:>5}']]
-                                    }
-                                    ]
+        self.args['view_layout'] = {
+            'columns': [
+                # Only one column
+                {
+                    'lines': [['SWAP', '{percent}'],
+                                ['total', '{total}'],
+                                ['used', '{used}'],
+                                ['free', '{free}']]
+                }
+            ]
+        }
 
 swap = Swap()

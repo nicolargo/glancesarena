@@ -26,8 +26,7 @@ class GlancesPlugin(object):
                 'gauge': [],
                 'derived_parameters': []
             },
-            'view_layout': [],
-            'view_template': ''
+            'view_layout': {}
         }
 
     def reset_stats(self):
@@ -99,7 +98,17 @@ class GlancesPlugin(object):
                 elif hasattr(psutil_stats, '_asdict'):
                     psutil_stats = psutil_stats._asdict()
                 else:
-                    psutil_stats = {psutil_fct_name: psutil_stats}
+                    if 'key' in psutil_fct:
+                        # A key is provided, use the PsUtil dict key as stat key
+                        stats_temp = []
+                        for k, v in psutil_stats.items():
+                            value_temp = v._asdict()
+                            value_temp['key'] = psutil_fct['key']
+                            value_temp[psutil_fct['key']] = k
+                            stats_temp.append(value_temp)
+                        psutil_stats = stats_temp
+                    else:
+                        psutil_stats = {psutil_fct_name: psutil_stats}
 
                 # Update the stats
                 if isinstance(stats, dict):
@@ -139,10 +148,18 @@ class GlancesPlugin(object):
 
     def _transform_gauge(self):
         """Tranform gauge to rate."""
-        if 'transform' in self.args and 'gauge' in self.args['transform']:
-            for key in self.args['transform']['gauge']:
-                if key in  self._stats and self._object['time_since_update'] is not None:
-                    self._stats[key + '_rate'] = (self._stats[key] - self._stats_previous[key]) / self._object['time_since_update']
+        if 'transform' not in self.args or 'gauge' not in self.args['transform']:
+            return
+        for key in self.args['transform']['gauge']:
+            if isinstance(self._stats, list):
+                for count, stat in enumerate(self._stats):
+                    if key in stat and self._object['time_since_update'] is not None:
+                        stat[key + '_rate'] = (stat[key] - self._stats_previous[count].get(key, stat[key])) / self._object['time_since_update']
+                    else:
+                        stat[key + '_rate'] = None
+            elif isinstance(self._stats, dict):
+                if key in self._stats and self._object['time_since_update'] is not None:
+                    self._stats[key + '_rate'] = (self._stats[key] - self._stats_previous.get(key, self._stats[key])) / self._object['time_since_update']
                 else:
                     self._stats[key + '_rate'] = None
 
@@ -150,8 +167,13 @@ class GlancesPlugin(object):
         """Add dervied parameters to the self._stats from the self._stats."""
         if 'transform' in self.args and 'derived_parameters' in self.args['transform']:
             for key in self.args['transform']['derived_parameters']:
-                if hasattr(self, key):
-                    self._stats[key] = getattr(self, key)()
+                if isinstance(self._stats, list):
+                    dp = getattr(self, key)()
+                    for count, stat in enumerate(self._stats):
+                         stat[key] = dp[count]
+                elif isinstance(self._stats, dict):
+                    if hasattr(self, key):
+                        self._stats[key] = getattr(self, key)()
 
     def add_stats(self):
         """Update stats in the global object."""
@@ -160,8 +182,7 @@ class GlancesPlugin(object):
     def update_view(self):
         """Update the view with the stats."""
         # There is a layout, use it to build all others views
-        if 'view_layout' in self.args:
-            self.layout_to_view()
+        self.layout_to_view()
 
         # Update the curses view
         self.view_to_curses()
@@ -176,47 +197,107 @@ class GlancesPlugin(object):
             A view is a list of lines (dict)
             A line is...
         """
-        stats_human = {k: auto_unit(v) for k, v in self._stats.items()}
-        self._object['view'] = self.args['view_layout']
-        for column in self._object['view']:
-            for line in column['lines']:
-                # Replace layout value by the current value
-                line[1] = line[1].format(**stats_human)
-            if 'lenght' not in column:
-                # lenght is not provided, compute it
-                column['lenght'] = len(column['lines'])
-            if 'width' not in column:
-                # Width is not provided, compute it
-                column['width'] = max([len(' '.join(line)) for line in column['lines']])
+        if 'view_layout' not in self.args or self.args['view_layout'] == {}:
+            return
 
-    def view_to_curses(self):
+        # Convert the stats to "human reading" unit
+        stats_human = build_stats_human(self._stats)
+
+        # We build the view
+        view = []
+
+        # Layout (columns) to view (lines)
+        max_lines = max([len(column['lines']) for column in self.args['view_layout']['columns'] if 'lines' in column])
+        for line_nb in range(max_lines):
+            if 'line_to_iter' in self.args['view_layout'] and line_nb == self.args['view_layout']['line_to_iter']:
+                for stat_human in stats_human:
+                    line = build_line(self.args['view_layout']['columns'],
+                                    line_nb,
+                                    stat_human)
+                    view.append(line)
+            else:
+                line = build_line(self.args['view_layout']['columns'],
+                                  line_nb,
+                                  stats_human[0])
+                view.append(line)
+
+        # Compute padding
+        fields_size = [[len(i) for i in l['raw']] for l in view]
+        fields_padding = [max([c[i] for c in fields_size if len(c) > i ]) for i in range(len(fields_size[0]))]
+        for line in view:
+            line['padding'] = fields_padding
+
+        # Update the plugin's object
+        self._object['view'] = view
+
+    def view_to_curses(self, space_between_columns=1):
         """Convert the layout to a view (mother for all king of views)."""
         self._object['view_curses'] = ''
-        lines_number = max([len(i['lines']) for i in self._object['view'] if 'lines' in i])
-        for line in range(lines_number):
-            first_column = True
-            for column in self._object['view']:
-                if line > len(column['lines']) - 1:
-                    # No more stats for this column
-                    continue
-                # Manage space between columns
-                if not first_column:
-                    self._object['view_curses'] += ' '
-                else:
-                    first_column = False
-                # Add lines
-                label = column['lines'][line][0]
-                value = column['lines'][line][1]
-                label_width = column['width'] - len(value) + 1
-                self._object['view_curses'] += '{label:{fill}{align}{width}}{value}'.format(label=label,
-                                                                                            fill=' ',
-                                                                                            align='<',
-                                                                                            width=label_width,
-                                                                                            value=value)
+
+        if not self._object['view']:
+            return
+
+        for line in self._object['view']:
+            for count, raw in enumerate(line['raw']):
+                self._object['view_curses'] += '{raw:{fill}{align}{padding}}'.format(raw=raw,
+                                                                                     fill=' ',
+                                                                                     align=line['align'][count],
+                                                                                     padding=line['padding'][count])
+                if count != len(line['raw']) - 1:
+                    self._object['view_curses'] += ' ' * space_between_columns
             self._object['view_curses'] += '\n'
 
 
-def auto_unit(number, low_precision=False, min_symbol='K', none_representation='-'):
+def build_stats_human(stats):
+    """Return human representation of stats"""
+    ret = []
+    if isinstance(stats, list):
+        for i in stats:
+            ret.append({k: auto_unit(v) for k, v in i.items()})
+    elif isinstance(stats, dict):
+        ret.append({k: auto_unit(v) for k, v in stats.items()})
+    else:
+        raise ValueError("stats should be list or dict")
+    return ret
+
+
+def build_line(columns, line_nb, stats_human):
+    """Build the view for the line_nb getting stats in the stats_human"""
+    line = {
+        'raw': [],
+        'align': [],
+        'padding': []
+    }
+    for column in columns:
+        if line_nb > len(column['lines']) - 1:
+            # No more stats for this column
+            continue
+        line['raw'].extend(build_raw_view(column['lines'][line_nb],
+                                          stats_human))
+        line['align'].extend(build_align_view(column['lines'][line_nb]))
+    return line
+
+
+def build_raw_view(lines_layout, stats_human, no_stat_human='-'):
+    """Convert the lines_layout to human reading stats list"""
+    raw = []
+    for v in lines_layout:
+        try:
+            raw.append(v.format(**stats_human))
+        except KeyError:
+            raw.append(no_stat_human)
+    return raw
+
+
+def build_align_view(lines_layout):
+    """Convert the lines_layout to alignement list (for UI)"""
+    return ['<' if c == 0 else '>' for c, _ in enumerate(lines_layout)]
+
+
+def auto_unit(number,
+              low_precision=False,
+              min_symbol='K',
+              none_representation='-'):
     """Make a nice human-readable string out of number.
     Number of decimal places increases as quantity approaches 1.
     CASE: 613421788        RESULT:       585M low_precision:       585M
@@ -232,9 +313,14 @@ def auto_unit(number, low_precision=False, min_symbol='K', none_representation='
     """
     if number is None:
         return none_representation
+    elif isinstance(number, str):
+        return number
+    elif number == 0:
+        return '0'
+
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     if min_symbol in symbols:
-        symbols = symbols[symbols.index(min_symbol) :]
+        symbols = symbols[symbols.index(min_symbol):]
     prefix = {
         'Y': 1208925819614629174706176,
         'Z': 1180591620717411303424,
@@ -246,6 +332,7 @@ def auto_unit(number, low_precision=False, min_symbol='K', none_representation='
         'K': 1024,
     }
 
+    decimal_precision = 1 if low_precision else 2
     for symbol in reversed(symbols):
         value = float(number) / prefix[symbol]
         if value > 1:
@@ -262,4 +349,4 @@ def auto_unit(number, low_precision=False, min_symbol='K', none_representation='
             elif symbol in 'K':
                 decimal_precision = 0
             return '{:.{decimal}f}{symbol}'.format(value, decimal=decimal_precision, symbol=symbol)
-    return '{!s}'.format(number)
+    return '{:.{decimal}f}{symbol}'.format(value, decimal=decimal_precision, symbol='')
