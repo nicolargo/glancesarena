@@ -4,7 +4,7 @@ from plugin import GlancesPlugin
 
 class PerCpu(GlancesPlugin):
 
-    """CPU (per) plugin
+    """CPU (per core) plugin
     Stat example:
     [{'cpu_percent': 14.9, 'user': 13.9, 'nice': 0.0, 'system': 1.0,
       'idle': 85.1, 'iowait': 0.0, 'irq': 0.0, 'softirq': 0.0,
