@@ -21,10 +21,10 @@ class Swap(GlancesPlugin):
             'columns': [
                 # Only one column
                 {
-                    'lines': [['SWAP', '{percent}'],
-                                ['total', '{total}'],
-                                ['used', '{used}'],
-                                ['free', '{free}']]
+                    'lines': [['SWAP', '{percent}%'],
+                              ['total', '{total}'],
+                              ['used', '{used}'],
+                              ['free', '{free}']]
                 }
             ]
         }

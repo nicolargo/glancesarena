@@ -30,7 +30,7 @@ class Cpu(GlancesPlugin):
             'columns': [
                 # First column
                 {
-                    'lines': [['CPU', '{cpu_percent}'],
+                    'lines': [['CPU', '{cpu_percent}%'],
                               ['user', '{user}'],
                               ['system', '{system}'],
                               ['iowait', '{iowait}']]

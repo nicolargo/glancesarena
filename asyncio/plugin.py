@@ -316,7 +316,7 @@ def build_align_view(lines_layout):
 
 
 def auto_unit(number,
-              low_precision=False,
+              low_precision=True,
               min_symbol='K',
               none_representation='-'):
     """Make a nice human-readable string out of number.
@@ -373,6 +373,6 @@ def auto_unit(number,
             return '{:.{decimal}f}{symbol}'.format(value,
                                                    decimal=decimal_precision,
                                                    symbol=symbol)
-    return '{:.{decimal}f}{symbol}'.format(value,
+    return '{:.{decimal}f}{symbol}'.format(value if number > 1024 else number,
                                            decimal=decimal_precision,
                                            symbol='')

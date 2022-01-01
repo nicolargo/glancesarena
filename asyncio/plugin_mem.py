@@ -28,17 +28,17 @@ class Mem(GlancesPlugin):
             'columns': [
                 # First column
                 {
-                    'lines': [['MEM', '{percent}'],
-                            ['total', '{total}'],
-                            ['used', '{used_abc}'],
-                            ['free', '{free_abc}']]
+                    'lines': [['MEM', '{percent}%'],
+                              ['total', '{total}'],
+                              ['used', '{used_abc}'],
+                              ['free', '{free_abc}']]
                 },
                 # Second column
                 {
                     'lines': [['active', '{active}'],
-                            ['inactive', '{inactive}'],
-                            ['buffer', '{buffers}'],
-                            ['cached', '{cached}']]
+                              ['inactive', '{inactive}'],
+                              ['buffer', '{buffers}'],
+                              ['cached', '{cached}']]
                 }
             ]
         }
