@@ -27,6 +27,7 @@ class Cpu(GlancesPlugin):
 
         # Init the view layout
         self.args['view_layout'] = {
+            'no_format': ['pid'],
             'columns': [
                 # First column
                 {

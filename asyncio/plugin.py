@@ -71,18 +71,29 @@ class GlancesPlugin(object):
 
         # Views
         #######
+        # @TODO: not sure this is the good place for this call
         self.update_view()
 
     def grab_stats(self):
         """Grab the stats."""
-        # Grab the stats using the psutil_fct list provided by the plugin
-        # The psutil_fct list is a list of dictionaries with the following format:
-        # - name key: psutil function to call
-        # - args key: psutil arguments of the function (optional)
-        if 'psutil_fct' not in self.args:
-            return
 
-        stats = None
+        # Using PsUtil functions
+        self._grab_psutil_stats()
+
+        # Using Glances (internals) functions
+        self._grab_glances_stats()
+
+        return self._stats
+
+    def _grab_psutil_stats(self):
+        """Grab the stats using the psutil_fct list provided by the plugin.
+           The psutil_fct list is a list of dictionaries with the following format:
+           - name key: psutil function to call
+           - args key: psutil arguments of the function (optional)"""
+
+        if 'psutil_fct' not in self.args:
+            return False
+
         for psutil_fct in self.args['psutil_fct']:
             # Get the PsUtil function name and args
             psutil_fct_name = psutil_fct['name']
@@ -122,28 +133,65 @@ class GlancesPlugin(object):
                     psutil_stats = {psutil_fct_name: psutil_stats}
 
             # Update the stats
-            if isinstance(stats, dict):
-                # It's a dict
-                # Merge the PsUtil stats with the existing stats
-                # So only one dict will be returned
-                stats.update(psutil_stats)
-            elif isinstance(stats, list):
-                # It's a list of dict
-                #
-                if stats == []:
-                    stats += psutil_stats
-                else:
-                    for i in range(len(stats)):
-                        stats[i].update(psutil_stats[i])
+            self._merge_into_stats(psutil_stats)
+
+        return True
+
+    def _grab_glances_stats(self):
+        """Grab the stats using the glances_fct list provided by the plugin.
+           The glances_fct list is a list of dictionaries with the following format:
+           - name key: Glances function to call
+           - args key: Glances arguments of the function (optional)"""
+
+        if 'glances_fct' not in self.args:
+            return False
+
+        for glances_fct in self.args['glances_fct']:
+            # Get the PsUtil function name and args
+            glances_fct_name = glances_fct['name']
+            glances_fct_args = glances_fct.get('args', {})
+
+            if glances_fct_name not in dir(self):
+                # @TODO: add a logger (Glances fct do not exist)
+                raise("Glances function {} not found".format(glances_fct_name))
+
+            # The Glances function is available
+            # Execute it
+            glances_stats = getattr(self, glances_fct_name)(**glances_fct_args)
+
+            # Update the stats
+            self._merge_into_stats(glances_stats)
+
+        return True
+
+    def _merge_into_stats(self, new_stat):
+        """Merge new_stats into self._stats."""
+        # Update the stats
+        if isinstance(self._stats, dict):
+            # It's a dict
+            # Merge the PsUtil stats with the existing stats
+            # So only one dict will be returned
+            self._stats.update(new_stat)
+        elif isinstance(self._stats, list):
+            # It's a list of dict
+            #
+            if self._stats == []:
+                self._stats += new_stat
             else:
-                # Others cases...
-                # Just copy the PsUtil stats to the existing stats
-                stats = psutil_stats
+                for i in range(len(self._stats)):
+                    # @TODO: some time we have the following error with the Process class
+                    # File "/home/nicolargo/dev/glancesarena/asyncio/plugin.py", line 163, in _grab_glances_stats
+                    # self._merge_into_stats(glances_stats)
+                    # File "/home/nicolargo/dev/glancesarena/asyncio/plugin.py", line 182, in _merge_into_stats
+                    # self._stats[i].update(new_stat[i])
+                    # IndexError: list index out of range
+                    # make: *** [Makefile:22: run-asyncio] Error 1
+                    self._stats[i].update(new_stat[i])
 
-        # Update the stats only at the end
-        self._stats = stats
-
-        return self._stats
+        else:
+            # Others cases...
+            # Just copy the PsUtil stats to the existing stats
+            self._stats = new_stat
 
     def add_metadata(self):
         """Add metadata to the global object."""
@@ -159,8 +207,12 @@ class GlancesPlugin(object):
         """Transform the stats."""
         # Compute rate
         self._transform_gauge()
+        # Expand some parameters
+        self._expand_parameters()
         # Evaluate all derived parameters
         self._derived_parameters()
+        # Remove unused stats
+        self._remove_parameters()
 
     def _transform_gauge(self):
         """Tranform gauge to rate."""
@@ -180,7 +232,7 @@ class GlancesPlugin(object):
                     self._stats[key + '_rate'] = None
 
     def _derived_parameters(self):
-        """Add dervied parameters to the self._stats from the self._stats."""
+        """Add derived parameters to the self._stats."""
         if 'transform' in self.args and 'derived_parameters' in self.args['transform']:
             for key in self.args['transform']['derived_parameters']:
                 if isinstance(self._stats, list):
@@ -190,6 +242,30 @@ class GlancesPlugin(object):
                 elif isinstance(self._stats, dict):
                     if hasattr(self, key):
                         self._stats[key] = getattr(self, key)()
+
+    def _expand_parameters(self):
+        """Expand parameters."""
+        if 'transform' in self.args and 'expand' in self.args['transform']:
+            for key in self.args['transform']['expand']:
+                if isinstance(self._stats, list):
+                    ep = getattr(self, key)()
+                    for count, stat in enumerate(self._stats):
+                         stat.update(ep[count])
+                elif isinstance(self._stats, dict):
+                    if hasattr(self, key):
+                        self._stats.update(getattr(self, key)())
+
+    def _remove_parameters(self):
+        """Remove unused parameters"""
+        if 'transform' in self.args and 'remove' in self.args['transform']:
+            for key in self.args['transform']['remove']:
+                if isinstance(self._stats, list):
+                    for stat in self._stats:
+                        if key in stat:
+                            del stat[key]
+                elif isinstance(self._stats, dict):
+                    if key in self._stats:
+                        del self._stats[key]
 
     def add_stats(self):
         """Update stats in the global object."""
@@ -217,7 +293,7 @@ class GlancesPlugin(object):
             return
 
         # Convert the stats to "human reading" unit
-        stats_human = build_stats_human(self._stats)
+        stats_human = build_stats_human(self._stats, self.args['view_layout'])
 
         # We build the view
         view = []
@@ -261,16 +337,17 @@ class GlancesPlugin(object):
             self._object['view_curses'] += '\n'
 
 
-def build_stats_human(stats):
+def build_stats_human(stats, layout):
     """Return human representation of stats"""
     ret = []
+    no_format = layout['no_format'] if 'no_format' in layout else []
     if isinstance(stats, list):
         for i in stats:
-            ret.append({k: auto_unit(v) for k, v in i.items()})
+            ret.append({k: (auto_unit(v) if k not in no_format else v) for k, v in i.items()})
     elif isinstance(stats, dict):
-        ret.append({k: auto_unit(v) for k, v in stats.items()})
+        ret.append({k: (auto_unit(v) if k not in no_format else v) for k, v in stats.items()})
     else:
-        raise ValueError("stats should be list or dict")
+        raise ValueError("stats should be list or dict (got {})".format(type(stats)))
     return ret
 
 
@@ -333,12 +410,12 @@ def auto_unit(number,
     :min_symbol: Do not approach if number < min_symbol (default is K)
     :none_representation: what is returned if number is None
     """
-    if number is None:
-        return none_representation
-    elif isinstance(number, str):
-        return number
-    elif number == 0:
+    if number == 0:
         return '0'
+    elif number is None:
+        return none_representation
+    elif isinstance(number, str) or not isinstance(number, (int, float)):
+        return number
 
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     if min_symbol in symbols:
