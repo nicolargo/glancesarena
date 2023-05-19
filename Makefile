@@ -20,3 +20,6 @@ format-asynio:
 
 run-asyncio:
 	./venv/bin/python ./asyncio/main.py
+
+run-sensor:
+	./venv/bin/python ./sensor/test_sensor.py

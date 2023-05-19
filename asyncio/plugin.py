@@ -176,7 +176,7 @@ class GlancesPlugin(object):
             # It's a list of dict
             #
             if self._stats == []:
-                self._stats += new_stat
+                self._stats = new_stat
             else:
                 for i in range(len(self._stats)):
                     # @TODO: some time we have the following error with the Process class
@@ -186,7 +186,24 @@ class GlancesPlugin(object):
                     # self._stats[i].update(new_stat[i])
                     # IndexError: list index out of range
                     # make: *** [Makefile:22: run-asyncio] Error 1
-                    self._stats[i].update(new_stat[i])
+                    #
+                    # list index out of range
+                    # Index: 342
+                    # Length self._stats: 343
+                    # Length new_stat: 341
+                    #
+                    # Ce n'est pas la bonne solution...
+                    # Quand on merge deux liste de dicts, on ne sait pas si les listes sont allignées
+                    # Il vaudrait mieux que l'on merge les dicts en fonction de leur clé
+                    # Donc ne plus utiliser des listes de dicts mais directement des dicts
+                    #
+                    try:
+                        self._stats[i].update(new_stat[i])
+                    except IndexError as e:
+                        print(e)
+                        print('Index: {}'.format(i))
+                        print('Length self._stats: {}'.format(len(self._stats)))
+                        print('Length new_stat: {}'.format(len(new_stat)))
 
         else:
             # Others cases...
