@@ -4,8 +4,8 @@ import time
 
 import psutil
 
-class GlancesPlugin(object):
 
+class GlancesPlugin(object):
     def __init__(self):
         """Init the plugin."""
         # Init args (self.args)
@@ -21,12 +21,9 @@ class GlancesPlugin(object):
         """Init the args."""
         # Set the default values
         self.args = {
-            'psutil_fct': [],
-            'transform': {
-                'gauge': [],
-                'derived_parameters': []
-            },
-            'view_layout': {}
+            "psutil_fct": [],
+            "transform": {"gauge": [], "derived_parameters": []},
+            "view_layout": {},
         }
 
     def reset_stats(self):
@@ -37,11 +34,11 @@ class GlancesPlugin(object):
         """Init the global object."""
         # It's a dictionary
         self._object = {
-            'name': self.__class__.__name__,
-            'stats': None,
-            'view': None,
-            'view_curses': None,
-            'time_since_update': None
+            "name": self.__class__.__name__,
+            "stats": None,
+            "view": None,
+            "view_curses": None,
+            "time_since_update": None,
         }
         # Only used to compute time_since_update
         self._last_update_time = None
@@ -87,17 +84,17 @@ class GlancesPlugin(object):
 
     def _grab_psutil_stats(self):
         """Grab the stats using the psutil_fct list provided by the plugin.
-           The psutil_fct list is a list of dictionaries with the following format:
-           - name key: psutil function to call
-           - args key: psutil arguments of the function (optional)"""
+        The psutil_fct list is a list of dictionaries with the following format:
+        - name key: psutil function to call
+        - args key: psutil arguments of the function (optional)"""
 
-        if 'psutil_fct' not in self.args:
+        if "psutil_fct" not in self.args:
             return False
 
-        for psutil_fct in self.args['psutil_fct']:
+        for psutil_fct in self.args["psutil_fct"]:
             # Get the PsUtil function name and args
-            psutil_fct_name = psutil_fct['name']
-            psutil_fct_args = psutil_fct.get('args', {})
+            psutil_fct_name = psutil_fct["name"]
+            psutil_fct_args = psutil_fct.get("args", {})
 
             if psutil_fct_name not in dir(psutil):
                 # @TODO: add a logger (psutil fct do not exist or being supported)
@@ -113,20 +110,25 @@ class GlancesPlugin(object):
                 pass
             elif isinstance(psutil_stats, list):
                 # The PsUtil return a list, convert result to a list of dict (if possible)
-                psutil_stats = [s._asdict() if (s is not None and hasattr(s, '_asdict')) else {psutil_fct_name: s} for s in psutil_stats]
-            elif hasattr(psutil_stats, '_asdict'):
+                psutil_stats = [
+                    s._asdict()
+                    if (s is not None and hasattr(s, "_asdict"))
+                    else {psutil_fct_name: s}
+                    for s in psutil_stats
+                ]
+            elif hasattr(psutil_stats, "_asdict"):
                 # The PsUtil can return a dict representation, use it
                 psutil_stats = psutil_stats._asdict()
             else:
-                if 'key' in psutil_fct:
+                if "key" in psutil_fct:
                     # A key is provided, use the PsUtil dict key as stat key
                     # and add the 'key' field (content the key value)
                     # Ex: For Network, 'key' = 'interface_name', 'interface_name': 'eth0'
                     stats_temp = []
                     for k, v in psutil_stats.items():
                         value_temp = v._asdict()
-                        value_temp['key'] = psutil_fct['key']
-                        value_temp[psutil_fct['key']] = k
+                        value_temp["key"] = psutil_fct["key"]
+                        value_temp[psutil_fct["key"]] = k
                         stats_temp.append(value_temp)
                     psutil_stats = stats_temp
                 else:
@@ -139,21 +141,21 @@ class GlancesPlugin(object):
 
     def _grab_glances_stats(self):
         """Grab the stats using the glances_fct list provided by the plugin.
-           The glances_fct list is a list of dictionaries with the following format:
-           - name key: Glances function to call
-           - args key: Glances arguments of the function (optional)"""
+        The glances_fct list is a list of dictionaries with the following format:
+        - name key: Glances function to call
+        - args key: Glances arguments of the function (optional)"""
 
-        if 'glances_fct' not in self.args:
+        if "glances_fct" not in self.args:
             return False
 
-        for glances_fct in self.args['glances_fct']:
+        for glances_fct in self.args["glances_fct"]:
             # Get the PsUtil function name and args
-            glances_fct_name = glances_fct['name']
-            glances_fct_args = glances_fct.get('args', {})
+            glances_fct_name = glances_fct["name"]
+            glances_fct_args = glances_fct.get("args", {})
 
             if glances_fct_name not in dir(self):
                 # @TODO: add a logger (Glances fct do not exist)
-                raise("Glances function {} not found".format(glances_fct_name))
+                raise ("Glances function {} not found".format(glances_fct_name))
 
             # The Glances function is available
             # Execute it
@@ -201,9 +203,9 @@ class GlancesPlugin(object):
                         self._stats[i].update(new_stat[i])
                     except IndexError as e:
                         print(e)
-                        print('Index: {}'.format(i))
-                        print('Length self._stats: {}'.format(len(self._stats)))
-                        print('Length new_stat: {}'.format(len(new_stat)))
+                        print("Index: {}".format(i))
+                        print("Length self._stats: {}".format(len(self._stats)))
+                        print("Length new_stat: {}".format(len(new_stat)))
 
         else:
             # Others cases...
@@ -215,9 +217,9 @@ class GlancesPlugin(object):
         # Add time since last update
         current_time = time.time()
         if self._last_update_time is None:
-            self._object['time_since_update'] = None
+            self._object["time_since_update"] = None
         else:
-            self._object['time_since_update'] = current_time - self._last_update_time
+            self._object["time_since_update"] = current_time - self._last_update_time
         self._last_update_time = current_time
 
     def transform(self):
@@ -233,49 +235,54 @@ class GlancesPlugin(object):
 
     def _transform_gauge(self):
         """Tranform gauge to rate."""
-        if 'transform' not in self.args or 'gauge' not in self.args['transform']:
+        if "transform" not in self.args or "gauge" not in self.args["transform"]:
             return
-        for key in self.args['transform']['gauge']:
+        for key in self.args["transform"]["gauge"]:
             if isinstance(self._stats, list):
                 for count, stat in enumerate(self._stats):
-                    if key in stat and self._object['time_since_update'] is not None:
-                        stat[key + '_rate'] = (stat[key] - self._stats_previous[count].get(key, stat[key])) / self._object['time_since_update']
+                    if key in stat and self._object["time_since_update"] is not None:
+                        stat[key + "_rate"] = (
+                            stat[key] - self._stats_previous[count].get(key, stat[key])
+                        ) / self._object["time_since_update"]
                     else:
-                        stat[key + '_rate'] = None
+                        stat[key + "_rate"] = None
             elif isinstance(self._stats, dict):
-                if key in self._stats and self._object['time_since_update'] is not None:
-                    self._stats[key + '_rate'] = (self._stats[key] - self._stats_previous.get(key, self._stats[key])) / self._object['time_since_update']
+                if key in self._stats and self._object["time_since_update"] is not None:
+                    self._stats[key + "_rate"] = (
+                        self._stats[key]
+                        - self._stats_previous.get(key, self._stats[key])
+                    ) / self._object["time_since_update"]
                 else:
-                    self._stats[key + '_rate'] = None
+                    self._stats[key + "_rate"] = None
 
     def _derived_parameters(self):
         """Add derived parameters to the self._stats."""
-        if 'transform' in self.args and 'derived_parameters' in self.args['transform']:
-            for key in self.args['transform']['derived_parameters']:
+        if "transform" in self.args and "derived_parameters" in self.args["transform"]:
+            for key in self.args["transform"]["derived_parameters"]:
                 if isinstance(self._stats, list):
                     dp = getattr(self, key)()
                     for count, stat in enumerate(self._stats):
-                         stat[key] = dp[count]
+                        stat[key] = dp[count]
                 elif isinstance(self._stats, dict):
                     if hasattr(self, key):
                         self._stats[key] = getattr(self, key)()
 
     def _expand_parameters(self):
         """Expand parameters."""
-        if 'transform' in self.args and 'expand' in self.args['transform']:
-            for key in self.args['transform']['expand']:
+        if "transform" in self.args and "expand" in self.args["transform"]:
+            for key in self.args["transform"]["expand"]:
                 if isinstance(self._stats, list):
                     ep = getattr(self, key)()
                     for count, stat in enumerate(self._stats):
-                         stat.update(ep[count])
+                        stat.update(ep[count])
                 elif isinstance(self._stats, dict):
                     if hasattr(self, key):
                         self._stats.update(getattr(self, key)())
 
     def _remove_parameters(self):
         """Remove unused parameters"""
-        if 'transform' in self.args and 'remove' in self.args['transform']:
-            for key in self.args['transform']['remove']:
+        if "transform" in self.args and "remove" in self.args["transform"]:
+            for key in self.args["transform"]["remove"]:
                 if isinstance(self._stats, list):
                     for stat in self._stats:
                         if key in stat:
@@ -286,7 +293,7 @@ class GlancesPlugin(object):
 
     def add_stats(self):
         """Update stats in the global object."""
-        self._object['stats'] = self._stats
+        self._object["stats"] = self._stats
 
     def update_view(self):
         """Update the view with the stats."""
@@ -306,63 +313,78 @@ class GlancesPlugin(object):
             A view is a list of lines (dict)
             A line is...
         """
-        if 'view_layout' not in self.args or self.args['view_layout'] == {}:
+        if "view_layout" not in self.args or self.args["view_layout"] == {}:
             return
 
         # Convert the stats to "human reading" unit
-        stats_human = build_stats_human(self._stats, self.args['view_layout'])
+        stats_human = build_stats_human(self._stats, self.args["view_layout"])
 
         # We build the view
         view = []
 
         # Layout (columns) to view (lines)
-        max_lines = max([len(column['lines']) for column in self.args['view_layout']['columns'] if 'lines' in column])
+        max_lines = max(
+            [
+                len(column["lines"])
+                for column in self.args["view_layout"]["columns"]
+                if "lines" in column
+            ]
+        )
         for line_nb in range(max_lines):
-            if 'line_to_iter' in self.args['view_layout'] and line_nb == self.args['view_layout']['line_to_iter']:
+            if (
+                "line_to_iter" in self.args["view_layout"]
+                and line_nb == self.args["view_layout"]["line_to_iter"]
+            ):
                 for stat_human in stats_human:
-                    line = build_line(self.args['view_layout']['columns'],
-                                    line_nb,
-                                    stat_human)
+                    line = build_line(
+                        self.args["view_layout"]["columns"], line_nb, stat_human
+                    )
                     view.append(line)
             else:
-                line = build_line(self.args['view_layout']['columns'],
-                                  line_nb,
-                                  stats_human[0])
+                line = build_line(
+                    self.args["view_layout"]["columns"], line_nb, stats_human[0]
+                )
                 view.append(line)
 
         # Compute padding
         set_line_padding(view)
 
         # Update the plugin's object
-        self._object['view'] = view
+        self._object["view"] = view
 
     def view_to_curses(self, space_between_columns=1):
         """Convert the layout to a view (mother for all king of views)."""
-        self._object['view_curses'] = ''
+        self._object["view_curses"] = ""
 
-        if not self._object['view']:
+        if not self._object["view"]:
             return
 
-        for line in self._object['view']:
-            for count, raw in enumerate(line['raw']):
-                self._object['view_curses'] += '{raw:{fill}{align}{padding}}'.format(raw=raw,
-                                                                                     fill=' ',
-                                                                                     align=line['align'][count],
-                                                                                     padding=line['padding'][count])
-                if count != len(line['raw']) - 1:
-                    self._object['view_curses'] += ' ' * space_between_columns
-            self._object['view_curses'] += '\n'
+        for line in self._object["view"]:
+            for count, raw in enumerate(line["raw"]):
+                self._object["view_curses"] += "{raw:{fill}{align}{padding}}".format(
+                    raw=raw,
+                    fill=" ",
+                    align=line["align"][count],
+                    padding=line["padding"][count],
+                )
+                if count != len(line["raw"]) - 1:
+                    self._object["view_curses"] += " " * space_between_columns
+            self._object["view_curses"] += "\n"
 
 
 def build_stats_human(stats, layout):
     """Return human representation of stats"""
     ret = []
-    no_format = layout['no_format'] if 'no_format' in layout else []
+    no_format = layout["no_format"] if "no_format" in layout else []
     if isinstance(stats, list):
         for i in stats:
-            ret.append({k: (auto_unit(v) if k not in no_format else v) for k, v in i.items()})
+            ret.append(
+                {k: (auto_unit(v) if k not in no_format else v) for k, v in i.items()}
+            )
     elif isinstance(stats, dict):
-        ret.append({k: (auto_unit(v) if k not in no_format else v) for k, v in stats.items()})
+        ret.append(
+            {k: (auto_unit(v) if k not in no_format else v) for k, v in stats.items()}
+        )
     else:
         raise ValueError("stats should be list or dict (got {})".format(type(stats)))
     return ret
@@ -370,30 +392,28 @@ def build_stats_human(stats, layout):
 
 def build_line(columns, line_nb, stats_human):
     """Build the view for the line_nb getting stats in the stats_human"""
-    line = {
-        'raw': [],
-        'align': [],
-        'padding': []
-    }
+    line = {"raw": [], "align": [], "padding": []}
     for column in columns:
-        if line_nb > len(column['lines']) - 1:
+        if line_nb > len(column["lines"]) - 1:
             # No more stats for this column
             continue
-        line['raw'].extend(build_raw_view(column['lines'][line_nb],
-                                          stats_human))
-        line['align'].extend(build_align_view(column['lines'][line_nb]))
+        line["raw"].extend(build_raw_view(column["lines"][line_nb], stats_human))
+        line["align"].extend(build_align_view(column["lines"][line_nb]))
     return line
 
 
 def set_line_padding(view):
     """Set the padding of each fields"""
-    fields_size = [[len(i) for i in l['raw']] for l in view]
-    fields_padding = [max([c[i] for c in fields_size if len(c) > i ]) for i in range(len(fields_size[0]))]
+    fields_size = [[len(i) for i in l["raw"]] for l in view]
+    fields_padding = [
+        max([c[i] for c in fields_size if len(c) > i])
+        for i in range(len(fields_size[0]))
+    ]
     for line in view:
-        line['padding'] = fields_padding
+        line["padding"] = fields_padding
 
 
-def build_raw_view(lines_layout, stats_human, no_stat_human='-'):
+def build_raw_view(lines_layout, stats_human, no_stat_human="-"):
     """Convert the lines_layout to human reading stats list"""
     raw = []
     for v in lines_layout:
@@ -406,13 +426,10 @@ def build_raw_view(lines_layout, stats_human, no_stat_human='-'):
 
 def build_align_view(lines_layout):
     """Convert the lines_layout to alignement list (for UI)"""
-    return ['<' if c == 0 else '>' for c, _ in enumerate(lines_layout)]
+    return ["<" if c == 0 else ">" for c, _ in enumerate(lines_layout)]
 
 
-def auto_unit(number,
-              low_precision=True,
-              min_symbol='K',
-              none_representation='-'):
+def auto_unit(number, low_precision=True, min_symbol="K", none_representation="-"):
     """Make a nice human-readable string out of number.
     Number of decimal places increases as quantity approaches 1.
     CASE: 613421788        RESULT:       585M low_precision:       585M
@@ -428,24 +445,24 @@ def auto_unit(number,
     :none_representation: what is returned if number is None
     """
     if number == 0:
-        return '0'
+        return "0"
     elif number is None:
         return none_representation
     elif isinstance(number, str) or not isinstance(number, (int, float)):
         return number
 
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
     if min_symbol in symbols:
-        symbols = symbols[symbols.index(min_symbol):]
+        symbols = symbols[symbols.index(min_symbol) :]
     prefix = {
-        'Y': 1208925819614629174706176,
-        'Z': 1180591620717411303424,
-        'E': 1152921504606846976,
-        'P': 1125899906842624,
-        'T': 1099511627776,
-        'G': 1073741824,
-        'M': 1048576,
-        'K': 1024,
+        "Y": 1208925819614629174706176,
+        "Z": 1180591620717411303424,
+        "E": 1152921504606846976,
+        "P": 1125899906842624,
+        "T": 1099511627776,
+        "G": 1073741824,
+        "M": 1048576,
+        "K": 1024,
     }
 
     decimal_precision = 1 if low_precision else 2
@@ -458,15 +475,15 @@ def auto_unit(number,
             elif value < 100:
                 decimal_precision = 1
             if low_precision:
-                if symbol in 'MK':
+                if symbol in "MK":
                     decimal_precision = 0
                 else:
                     decimal_precision = min(1, decimal_precision)
-            elif symbol in 'K':
+            elif symbol in "K":
                 decimal_precision = 0
-            return '{:.{decimal}f}{symbol}'.format(value,
-                                                   decimal=decimal_precision,
-                                                   symbol=symbol)
-    return '{:.{decimal}f}{symbol}'.format(value if number > 1024 else number,
-                                           decimal=decimal_precision,
-                                           symbol='')
+            return "{:.{decimal}f}{symbol}".format(
+                value, decimal=decimal_precision, symbol=symbol
+            )
+    return "{:.{decimal}f}{symbol}".format(
+        value if number > 1024 else number, decimal=decimal_precision, symbol=""
+    )

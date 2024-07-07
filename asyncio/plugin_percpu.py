@@ -2,8 +2,8 @@
 
 from plugin import GlancesPlugin
 
-class PerCpu(GlancesPlugin):
 
+class PerCpu(GlancesPlugin):
     """CPU (per core) plugin
     Stat example:
     [{'cpu_percent': 14.9, 'user': 13.9, 'nice': 0.0, 'system': 1.0,
@@ -15,41 +15,39 @@ class PerCpu(GlancesPlugin):
         super(PerCpu, self).__init__()
 
         # Init the stats
-        self.args['psutil_fct'] = [{'name': 'cpu_percent', 'args': {'percpu': True, 'interval': 0.0}},
-                                   {'name': 'cpu_times_percent', 'args': {'percpu': True, 'interval': 0.0}}]
+        self.args["psutil_fct"] = [
+            {"name": "cpu_percent", "args": {"percpu": True, "interval": 0.0}},
+            {"name": "cpu_times_percent", "args": {"percpu": True, "interval": 0.0}},
+        ]
 
         # Init the view layout
         # user system   idle iowait  steal
-        self.args['view_layout'] = {
+        self.args["view_layout"] = {
             # We will iterate the second line (index of first line is 0)
-            'line_to_iter': 1,
-            'columns': [
+            "line_to_iter": 1,
+            "columns": [
                 # First column
                 {
-                    'lines': [['user'],
-                              ['{user}']],
+                    "lines": [["user"], ["{user}"]],
                 },
                 # Second column
                 {
-                    'lines': [['system'],
-                              ['{system}']],
+                    "lines": [["system"], ["{system}"]],
                 },
                 # Third column
                 {
-                    'lines': [['idle'],
-                              ['{idle}']],
+                    "lines": [["idle"], ["{idle}"]],
                 },
                 # Fourth column
                 {
-                    'lines': [['iowait'],
-                              ['{iowait}']],
+                    "lines": [["iowait"], ["{iowait}"]],
                 },
                 # Fifth column
                 {
-                    'lines': [['steal'],
-                              ['{steal}']],
-                }
-            ]
+                    "lines": [["steal"], ["{steal}"]],
+                },
+            ],
         }
+
 
 percpu = PerCpu()

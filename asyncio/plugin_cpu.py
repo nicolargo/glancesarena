@@ -2,8 +2,8 @@
 
 from plugin import GlancesPlugin
 
-class Cpu(GlancesPlugin):
 
+class Cpu(GlancesPlugin):
     """CPU plugin
     Stat example:
     {'cpu_percent': 0.0, 'user': 0.0, 'nice': 0.0, 'system': 0.0, 'idle': 0.0,
@@ -17,38 +17,49 @@ class Cpu(GlancesPlugin):
         super(Cpu, self).__init__()
 
         # Set the PsUtil functions used to grab the stats
-        self.args['psutil_fct'] = [{'name': 'cpu_percent', 'args': {'interval': 0.0}},
-                                   {'name': 'cpu_times_percent', 'args': {'interval': 0.0}},
-                                   {'name': 'cpu_stats'}]
+        self.args["psutil_fct"] = [
+            {"name": "cpu_percent", "args": {"interval": 0.0}},
+            {"name": "cpu_times_percent", "args": {"interval": 0.0}},
+            {"name": "cpu_stats"},
+        ]
 
         # Transform the stats
         # Gauge: for each gauge field, create an extra field with the rate per second
-        self.args['transform'].update({'gauge': ['ctx_switches', 'interrupts', 'soft_interrupts', 'syscalls']})
+        self.args["transform"].update(
+            {"gauge": ["ctx_switches", "interrupts", "soft_interrupts", "syscalls"]}
+        )
 
         # Init the view layout
-        self.args['view_layout'] = {
-            'columns': [
+        self.args["view_layout"] = {
+            "columns": [
                 # First column
                 {
-                    'lines': [['CPU', '{cpu_percent}%'],
-                              ['user', '{user}'],
-                              ['system', '{system}'],
-                              ['iowait', '{iowait}']]
+                    "lines": [
+                        ["CPU", "{cpu_percent}%"],
+                        ["user", "{user}"],
+                        ["system", "{system}"],
+                        ["iowait", "{iowait}"],
+                    ]
                 },
                 # Second column
                 {
-                    'lines': [['idle', '{idle}'],
-                              ['irq', '{irq}'],
-                              ['nice', '{nice}'],
-                              ['steal', '{steal}']]
+                    "lines": [
+                        ["idle", "{idle}"],
+                        ["irq", "{irq}"],
+                        ["nice", "{nice}"],
+                        ["steal", "{steal}"],
+                    ]
                 },
                 # Third column
                 {
-                    'lines': [['ctx_sw', '{ctx_switches}'],
-                              ['inter', '{interrupts}'],
-                              ['sw_int', '{soft_interrupts}']]
+                    "lines": [
+                        ["ctx_sw", "{ctx_switches}"],
+                        ["inter", "{interrupts}"],
+                        ["sw_int", "{soft_interrupts}"],
+                    ]
                 },
             ]
         }
+
 
 cpu = Cpu()

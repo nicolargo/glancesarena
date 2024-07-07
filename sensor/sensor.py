@@ -6,6 +6,7 @@ STATUS_INIT = 0
 STATUS_PROCESSED = 1
 STATUS_OBSOLETE = 2
 
+
 class Sensor(object):
     """This class describes a sensor.
     A sensor is defined by:
@@ -17,8 +18,16 @@ class Sensor(object):
     - an history
     """
 
-    def __init__(self, name, value=None, unit=None, description=None,
-                 status=STATUS_INIT, history=[], history_max_size=2):
+    def __init__(
+        self,
+        name,
+        value=None,
+        unit=None,
+        description=None,
+        status=STATUS_INIT,
+        history=[],
+        history_max_size=2,
+    ):
         self._name = name
         self._value = value
         self._unit = unit

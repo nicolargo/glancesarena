@@ -2,8 +2,8 @@
 
 from plugin import GlancesPlugin
 
-class Mem(GlancesPlugin):
 
+class Mem(GlancesPlugin):
     """Mem (RAM) plugin
     Stat example:
     {'total': 7849021440, 'available': 1066557440, 'percent': 86.4,
@@ -17,29 +17,33 @@ class Mem(GlancesPlugin):
         super(Mem, self).__init__()
 
         # Init the args
-        self.args['psutil_fct'] = [{'name': 'virtual_memory'}]
+        self.args["psutil_fct"] = [{"name": "virtual_memory"}]
 
         # Transform the stats
         # Add some derived parameters stats (functions defined below)
-        self.args['transform'].update({'derived_parameters': ['free_abc', 'used_abc']})
+        self.args["transform"].update({"derived_parameters": ["free_abc", "used_abc"]})
 
         # Init the view layout
-        self.args['view_layout'] = {
-            'columns': [
+        self.args["view_layout"] = {
+            "columns": [
                 # First column
                 {
-                    'lines': [['MEM', '{percent}%'],
-                              ['total', '{total}'],
-                              ['used', '{used_abc}'],
-                              ['free', '{free_abc}']]
+                    "lines": [
+                        ["MEM", "{percent}%"],
+                        ["total", "{total}"],
+                        ["used", "{used_abc}"],
+                        ["free", "{free_abc}"],
+                    ]
                 },
                 # Second column
                 {
-                    'lines': [['active', '{active}'],
-                              ['inactive', '{inactive}'],
-                              ['buffer', '{buffers}'],
-                              ['cached', '{cached}']]
-                }
+                    "lines": [
+                        ["active", "{active}"],
+                        ["inactive", "{inactive}"],
+                        ["buffer", "{buffers}"],
+                        ["cached", "{cached}"],
+                    ]
+                },
             ]
         }
 
@@ -50,10 +54,12 @@ class Mem(GlancesPlugin):
     def free_abc(self):
         # See https://unix.stackexchange.com/questions/65835/htop-reporting-much-higher-memory-usage-than-free-or-top
         # free_abc = available + buffer + cached
-        if 'available' in self.stats and self.stats['available'] is not None:
-            ret = self.stats.get('available') \
-                + self.stats.get('buffers', 0) \
-                + self.stats.get('cached', 0)
+        if "available" in self.stats and self.stats["available"] is not None:
+            ret = (
+                self.stats.get("available")
+                + self.stats.get("buffers", 0)
+                + self.stats.get("cached", 0)
+            )
         else:
             ret = None
         return ret
@@ -61,7 +67,7 @@ class Mem(GlancesPlugin):
     def used_abc(self):
         # See https://unix.stackexchange.com/questions/65835/htop-reporting-much-higher-memory-usage-than-free-or-top
         # used_abc = total - free_abc
-        return self.stats.get('total') - self.stats.get('free_abc')
+        return self.stats.get("total") - self.stats.get("free_abc")
 
 
 mem = Mem()

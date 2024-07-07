@@ -14,7 +14,7 @@ from plugin_swap import swap
 from plugin_network import network
 from plugin_process import process
 
-async def glances_stats(plugin, refresh=3):
+async def glances_stats(plugin, refresh=2):
     start = time.perf_counter()
     plugin.update()
     ret = plugin.get
