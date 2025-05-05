@@ -23,3 +23,6 @@ run-asyncio:
 
 run-sensor:
 	./venv/bin/python ./sensor/test_sensor.py
+
+run-textual:
+	./venv/bin/python ./textual/main.py
