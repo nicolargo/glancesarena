@@ -3,16 +3,16 @@ from time import monotonic
 from textual.app import App, ComposeResult
 from textual.containers import Container, Grid, VerticalGroup, VerticalScroll
 from textual.reactive import reactive
-from textual.widgets import Footer, Header, Label, Placeholder, Sparkline
+from textual.widgets import Footer, Header, Label, Placeholder, ProgressBar
 
 
 class QuicklookTextualPlugin(VerticalGroup):
     """Quicklook plugin for Textual."""
 
     def compose(self) -> ComposeResult:
-        yield Sparkline([0, 1, 2, 3, 4, 5], id="quicklookcpu")
-        yield Sparkline([0, 1, 2, 3, 4, 5], id="quicklookmem")
-        yield Sparkline([0, 1, 2, 3, 4, 5], id="quicklookload")
+        yield ProgressBar(total=100, id="quicklookcpu")
+        yield ProgressBar(total=100, id="quicklookmem")
+        yield ProgressBar(total=100, id="quicklookload")
 
 
 class CpuTextualPlugin(Container):
