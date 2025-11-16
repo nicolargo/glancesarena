@@ -8,8 +8,8 @@ import psutil
 class GlancesPlugin(object):
     def __init__(self):
         """Init the plugin."""
-        # Init args (self.args)
-        self.init_args()
+        # Init stats definition (self.stats_def)
+        self.init_stats_def()
 
         # Init the stats (self._stats)
         self.reset_stats()
@@ -17,10 +17,10 @@ class GlancesPlugin(object):
         # Init the main sbject (self._object)
         self.init_object()
 
-    def init_args(self):
-        """Init the args."""
+    def init_stats_def(self):
+        """Init the stats definition."""
         # Set the default values
-        self.args = {
+        self.stats_def = {
             "psutil_fct": [],
             "transform": {"gauge": [], "derived_parameters": []},
             "view_layout": {},
@@ -88,10 +88,10 @@ class GlancesPlugin(object):
         - name key: psutil function to call
         - args key: psutil arguments of the function (optional)"""
 
-        if "psutil_fct" not in self.args:
+        if "psutil_fct" not in self.stats_def:
             return False
 
-        for psutil_fct in self.args["psutil_fct"]:
+        for psutil_fct in self.stats_def["psutil_fct"]:
             # Get the PsUtil function name and args
             psutil_fct_name = psutil_fct["name"]
             psutil_fct_args = psutil_fct.get("args", {})
@@ -145,10 +145,10 @@ class GlancesPlugin(object):
         - name key: Glances function to call
         - args key: Glances arguments of the function (optional)"""
 
-        if "glances_fct" not in self.args:
+        if "glances_fct" not in self.stats_def:
             return False
 
-        for glances_fct in self.args["glances_fct"]:
+        for glances_fct in self.stats_def["glances_fct"]:
             # Get the PsUtil function name and args
             glances_fct_name = glances_fct["name"]
             glances_fct_args = glances_fct.get("args", {})
@@ -235,9 +235,9 @@ class GlancesPlugin(object):
 
     def _transform_gauge(self):
         """Tranform gauge to rate."""
-        if "transform" not in self.args or "gauge" not in self.args["transform"]:
+        if "transform" not in self.stats_def or "gauge" not in self.stats_def["transform"]:
             return
-        for key in self.args["transform"]["gauge"]:
+        for key in self.stats_def["transform"]["gauge"]:
             if isinstance(self._stats, list):
                 for count, stat in enumerate(self._stats):
                     if key in stat and self._object["time_since_update"] is not None:
@@ -257,8 +257,8 @@ class GlancesPlugin(object):
 
     def _derived_parameters(self):
         """Add derived parameters to the self._stats."""
-        if "transform" in self.args and "derived_parameters" in self.args["transform"]:
-            for key in self.args["transform"]["derived_parameters"]:
+        if "transform" in self.stats_def and "derived_parameters" in self.stats_def["transform"]:
+            for key in self.stats_def["transform"]["derived_parameters"]:
                 if isinstance(self._stats, list):
                     dp = getattr(self, key)()
                     for count, stat in enumerate(self._stats):
@@ -269,8 +269,8 @@ class GlancesPlugin(object):
 
     def _expand_parameters(self):
         """Expand parameters."""
-        if "transform" in self.args and "expand" in self.args["transform"]:
-            for key in self.args["transform"]["expand"]:
+        if "transform" in self.stats_def and "expand" in self.stats_def["transform"]:
+            for key in self.stats_def["transform"]["expand"]:
                 if isinstance(self._stats, list):
                     ep = getattr(self, key)()
                     for count, stat in enumerate(self._stats):
@@ -281,8 +281,8 @@ class GlancesPlugin(object):
 
     def _remove_parameters(self):
         """Remove unused parameters"""
-        if "transform" in self.args and "remove" in self.args["transform"]:
-            for key in self.args["transform"]["remove"]:
+        if "transform" in self.stats_def and "remove" in self.stats_def["transform"]:
+            for key in self.stats_def["transform"]["remove"]:
                 if isinstance(self._stats, list):
                     for stat in self._stats:
                         if key in stat:
@@ -313,11 +313,11 @@ class GlancesPlugin(object):
             A view is a list of lines (dict)
             A line is...
         """
-        if "view_layout" not in self.args or self.args["view_layout"] == {}:
+        if "view_layout" not in self.stats_def or self.stats_def["view_layout"] == {}:
             return
 
         # Convert the stats to "human reading" unit
-        stats_human = build_stats_human(self._stats, self.args["view_layout"])
+        stats_human = build_stats_human(self._stats, self.stats_def["view_layout"])
 
         # We build the view
         view = []
@@ -326,23 +326,23 @@ class GlancesPlugin(object):
         max_lines = max(
             [
                 len(column["lines"])
-                for column in self.args["view_layout"]["columns"]
+                for column in self.stats_def["view_layout"]["columns"]
                 if "lines" in column
             ]
         )
         for line_nb in range(max_lines):
             if (
-                "line_to_iter" in self.args["view_layout"]
-                and line_nb == self.args["view_layout"]["line_to_iter"]
+                "line_to_iter" in self.stats_def["view_layout"]
+                and line_nb == self.stats_def["view_layout"]["line_to_iter"]
             ):
                 for stat_human in stats_human:
                     line = build_line(
-                        self.args["view_layout"]["columns"], line_nb, stat_human
+                        self.stats_def["view_layout"]["columns"], line_nb, stat_human
                     )
                     view.append(line)
             else:
                 line = build_line(
-                    self.args["view_layout"]["columns"], line_nb, stats_human[0]
+                    self.stats_def["view_layout"]["columns"], line_nb, stats_human[0]
                 )
                 view.append(line)
 

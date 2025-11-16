@@ -14,10 +14,10 @@ class Swap(GlancesPlugin):
         super(Swap, self).__init__()
 
         # Init the args
-        self.args["psutil_fct"] = [{"name": "swap_memory"}]
+        self.stats_def["psutil_fct"] = [{"name": "swap_memory"}]
 
         # Init the view layout
-        self.args["view_layout"] = {
+        self.stats_def["view_layout"] = {
             "columns": [
                 # Only one column
                 {

@@ -17,14 +17,14 @@ class Mem(GlancesPlugin):
         super(Mem, self).__init__()
 
         # Init the args
-        self.args["psutil_fct"] = [{"name": "virtual_memory"}]
+        self.stats_def["psutil_fct"] = [{"name": "virtual_memory"}]
 
         # Transform the stats
         # Add some derived parameters stats (functions defined below)
-        self.args["transform"].update({"derived_parameters": ["free_abc", "used_abc"]})
+        self.stats_def["transform"].update({"derived_parameters": ["free_abc", "used_abc"]})
 
         # Init the view layout
-        self.args["view_layout"] = {
+        self.stats_def["view_layout"] = {
             "columns": [
                 # First column
                 {

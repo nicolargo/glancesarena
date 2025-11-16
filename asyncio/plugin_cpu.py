@@ -17,7 +17,7 @@ class Cpu(GlancesPlugin):
         super(Cpu, self).__init__()
 
         # Set the PsUtil functions used to grab the stats
-        self.args["psutil_fct"] = [
+        self.stats_def["psutil_fct"] = [
             {"name": "cpu_percent", "args": {"interval": 0.0}},
             {"name": "cpu_times_percent", "args": {"interval": 0.0}},
             {"name": "cpu_stats"},
@@ -25,12 +25,12 @@ class Cpu(GlancesPlugin):
 
         # Transform the stats
         # Gauge: for each gauge field, create an extra field with the rate per second
-        self.args["transform"].update(
+        self.stats_def["transform"].update(
             {"gauge": ["ctx_switches", "interrupts", "soft_interrupts", "syscalls"]}
         )
 
         # Init the view layout
-        self.args["view_layout"] = {
+        self.stats_def["view_layout"] = {
             "columns": [
                 # First column
                 {

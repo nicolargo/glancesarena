@@ -18,7 +18,7 @@ class Network(GlancesPlugin):
 
         # Set the PsUtil functions used to grab the stats
         # net_io_counters(pernic=True)
-        self.args["psutil_fct"] = [
+        self.stats_def["psutil_fct"] = [
             {
                 "name": "net_io_counters",
                 "args": {"pernic": True},
@@ -29,9 +29,9 @@ class Network(GlancesPlugin):
 
         # Transform the stats
         # Gauge: for each gauge field, create an extra field with the rate per second
-        self.args["transform"].update({"gauge": ["bytes_recv", "bytes_sent"]})
+        self.stats_def["transform"].update({"gauge": ["bytes_recv", "bytes_sent"]})
         # Add some derived parameters stats (functions defined below)
-        self.args["transform"].update(
+        self.stats_def["transform"].update(
             {
                 "derived_parameters": [
                     "speed",
@@ -43,7 +43,7 @@ class Network(GlancesPlugin):
         )
 
         # Init the view layout
-        self.args["view_layout"] = {
+        self.stats_def["view_layout"] = {
             # We will iterate the second line (index of first line is 0)
             "line_to_iter": 1,
             "columns": [

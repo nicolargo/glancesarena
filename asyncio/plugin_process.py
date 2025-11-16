@@ -13,14 +13,14 @@ class Process(GlancesPlugin):
         super(Process, self).__init__()
 
         # Init the args
-        self.args["glances_fct"] = [{"name": "process_list"}]
+        self.stats_def["glances_fct"] = [{"name": "process_list"}]
 
         # Transform the stats
-        self.args["transform"].update({"expand": ["memory_info"]})
-        self.args["transform"].update({"remove": ["memory_info"]})
+        self.stats_def["transform"].update({"expand": ["memory_info"]})
+        self.stats_def["transform"].update({"remove": ["memory_info"]})
 
         # Init the view layout
-        self.args["view_layout"] = {
+        self.stats_def["view_layout"] = {
             "line_to_iter": 1,
             "no_format": ["pid"],
             "columns": [
