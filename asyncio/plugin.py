@@ -105,17 +105,18 @@ class GlancesPlugin(object):
             psutil_stats = getattr(psutil, psutil_fct_name)(**psutil_fct_args)
 
             # Convert in a standard object (dict or list of dict)
+            print(f"{type(psutil_stats)} {psutil_fct_name}")
             if psutil_stats is None:
                 # TODO: log error
                 pass
             elif isinstance(psutil_stats, list):
                 # The PsUtil return a list, convert result to a list of dict (if possible)
-                psutil_stats = [
-                    s._asdict()
-                    if (s is not None and hasattr(s, "_asdict"))
-                    else {psutil_fct_name: s}
-                    for s in psutil_stats
-                ]
+                psutil_stats = {
+                    k: v._asdict()
+                    if (v is not None and hasattr(v, "_asdict"))
+                    else {psutil_fct_name: v}
+                    for k, v in enumerate(psutil_stats)
+                }
             elif hasattr(psutil_stats, "_asdict"):
                 # The PsUtil can return a dict representation, use it
                 psutil_stats = psutil_stats._asdict()
@@ -124,13 +125,12 @@ class GlancesPlugin(object):
                     # A key is provided, use the PsUtil dict key as stat key
                     # and add the 'key' field (content the key value)
                     # Ex: For Network, 'key' = 'interface_name', 'interface_name': 'eth0'
-                    stats_temp = []
-                    for k, v in psutil_stats.items():
-                        value_temp = v._asdict()
-                        value_temp["key"] = psutil_fct["key"]
-                        value_temp[psutil_fct["key"]] = k
-                        stats_temp.append(value_temp)
-                    psutil_stats = stats_temp
+                    psutil_stats = {
+                        k: v._asdict()
+                        if (v is not None and hasattr(v, "_asdict"))
+                        else {psutil_fct_name: v}
+                        for k, v in psutil_stats.items()
+                    }
                 else:
                     psutil_stats = {psutil_fct_name: psutil_stats}
 

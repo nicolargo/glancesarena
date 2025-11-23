@@ -63,28 +63,33 @@ class Network(GlancesPlugin):
     def speed(self):
         """Interface speed in Mbps, convert it to bps
         Can be always 0 on some OSes"""
-        return [i["speed"] * 1048576 if "speed" in i else "-" for i in self.stats]
+        return {
+            k: v["speed"] * 1048576 if "speed" in v else "-"
+            for k, v in self.stats.items()
+        }
 
     def duplex(self):
         """Interface mode
         See documentation here: https://psutil.readthedocs.io/en/latest/#psutil.net_if_stats"""
-        return [
-            str(i["duplex"]).split("_")[-1] if "duplex" in i else "-"
-            for i in self.stats
-        ]
+        return {
+            k: str(v["duplex"]).split("_")[-1] if "duplex" in v else "-"
+            for k, v in self.stats.items()
+        }
 
     def cumulative_cx(self):
         """Rx+Tx"""
-        return [i["bytes_recv"] + i["bytes_sent"] for i in self.stats]
+        return {
+            k: v["bytes_recv"] + v["bytes_sent"]
+            for k, v in self.stats.items()
+        }
 
     def cumulative_cx_rate(self):
         """Rx+Tx rate"""
-        return [
-            i["bytes_recv_rate"] + i["bytes_sent_rate"]
-            if i["bytes_recv_rate"] is not None
-            else 0
-            for i in self.stats
-        ]
+        return {
+            k: v["bytes_recv_rate"] + v["bytes_sent_rate"]
+            if v["bytes_recv_rate"] is not None else 0
+            for k, v in self.stats.items()
+        }
 
 
 network = Network()
