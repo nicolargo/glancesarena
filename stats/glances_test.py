@@ -27,6 +27,8 @@ cpu.update('total', 1)
 cpu.update('total', 2)
 cpu.update('total', 3)
 print(f'{asdict(cpu):}')
+cpu.reset()
+print(f'{asdict(cpu):}')
 
 # NETWORK
 # Todo...
