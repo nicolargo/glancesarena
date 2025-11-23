@@ -63,4 +63,4 @@ bower_components/
 
 # Virtual env
 /venv/
-
+*/uv.lock
