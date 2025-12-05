@@ -1,34 +1,31 @@
 from dataclasses import dataclass, field
 
+from glances_history import History
+
 
 @dataclass
 class Stat:
-    unit: str
+    unit: str | None = None
     value: float | None = None
     retention: int | None = None
-    history: list[float] = field(default_factory=list)
+    history: History = field(default_factory=History)
+
+    def __post_init__(self):
+        self.history = History(self.retention)
 
     def reset(self):
         self.value = None
-        self.history = []
+        self.history.reset()
 
     def update(self, value: float):
         self.value = value
-        if self.retention is not None and len(self.history) >= self.retention:
-            self.history.pop(0)
         self.history.append(value)
 
     def mean(self) -> float | None:
-        if len(self.history) == 0:
-            return None
-        return sum(self.history) / len(self.history)
+        return self.history.mean()
 
     def max(self) -> float | None:
-        if len(self.history) == 0:
-            return None
-        return max(self.history)
+        return self.history.max()
 
     def min(self) -> float | None:
-        if len(self.history) == 0:
-            return None
-        return min(self.history)
+        return self.history.min()
