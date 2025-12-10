@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from glances_stat import Stat
 
@@ -6,48 +6,83 @@ from glances_stat import Stat
 @dataclass
 class Plugin:
     definition: dict[str, dict]
-    retention: int | None = None
     stats: dict[str, Stat] = None
-
-    def __post_init__(self):
-        self.retention = self.retention if self.retention is not None else 100
 
     def reset(self):
         if self.stats is not None:
             for stat in self.stats.values():
                 stat.reset()
 
-    def update(self, field_key: str, field_value: float, key: str | None = None):
+    def _create_stats(self, field_key: str, key: str | None = None, rate: bool = False) -> Stat:
         if self.stats is None:
             self.stats = {}
 
-        if self.definition.get('key') and key not in self.stats:
-            self.stats[key] = dict()
+        # If retention is defined, use it, else no retention (=0)
+        retention = self.definition['fields'][field_key].get('retention', 0)
+
+        # Manage rate stats
+        if rate:
+            field_key = f'{field_key}_rate'
 
         if self.definition.get('key'):
+            # Plugin as a key (example: network)
+            if key not in self.stats:
+                self.stats[key] = dict()
             if field_key not in self.stats[key]:
-                self.stats[key][field_key] = Stat(retention=self.retention)
-            self.stats[key][field_key].update(field_value)
+                self.stats[key][field_key] = Stat(retention=retention)
+            stats = self.stats[key][field_key]
         else:
+            # Plugin as no key (example: cpu)
             if field_key not in self.stats:
-                self.stats[field_key] = Stat(retention=self.retention)
-            self.stats[field_key].update(field_value)
+                self.stats[field_key] = Stat(retention=retention)
+            stats = self.stats[field_key]
+        return stats
+
+    def update(self, field_key: str, field_value: float, key: str | None = None):
+        stats = self._create_stats(field_key, key)
+        # Manage rate
+        if 'rate' in self.definition['fields'][field_key] and self.definition['fields'][field_key]['rate']:
+            rate_stats = self._create_stats(field_key, key, rate=True)
+            rate_stats.update(field_value, rate=True)
+        stats.update(field_value)
+
+    def get_definition(self, key: str | None = None) -> dict:
+        if key is None:
+            return self.definition
+        else:
+            return self.definition['fields'].get(key, {})
+
+    def get_stats(self, key: str | None = None) -> dict:
+        if key is None:
+            return {k: asdict(v) for k, v in self.stats.items()}
+        elif key in self.stats:
+            return asdict(self.stats[key])
+        else:
+            return {}
+
+    def get_history(self, key: str | None = None) -> dict:
+        if key is None:
+            return {k: v.history for k, v in self.stats.items()}
+        elif key in self.stats:
+            return self.stats[key].history
+        else:
+            return {}
 
 
 class CpuPlugin(Plugin):
     definition = {
         'name': 'cpu',
-        'key': None,
         'fields': {
             'total': {
                 'description': 'CPU Total Usage',
-                'unit': '%'
+                'unit': '%',
+                'retention': 3
             }
         }
     }
 
-    def __init__(self, retention: int | None = None):
-        super().__init__(self.definition, retention=retention)
+    def __init__(self):
+        super().__init__(self.definition)
 
 
 class NetworkPlugin(Plugin):
@@ -58,10 +93,11 @@ class NetworkPlugin(Plugin):
             'bytes_recv': {
                 'description': 'Network Received Bytes',
                 'unit': 'byte',
-                'rate': True
+                'rate': True,
+                'retention': 3
             }
         }
     }
 
-    def __init__(self, retention: int | None = None):
-        super().__init__(self.definition, retention=retention)
+    def __init__(self):
+        super().__init__(self.definition)
