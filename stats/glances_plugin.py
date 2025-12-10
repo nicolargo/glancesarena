@@ -38,7 +38,7 @@ class Plugin:
             stats = self.stats[field_key]
         return stats
 
-    def update(self, field_key: str, field_value: float, key: str | None = None):
+    def update_field(self, field_key: str, field_value: float, key: str | None = None):
         stats = self._create_stats(field_key, key)
         # Manage rate
         if 'rate' in self.definition['fields'][field_key] and self.definition['fields'][field_key]['rate']:
@@ -51,6 +51,14 @@ class Plugin:
             return self.definition
         else:
             return self.definition['fields'].get(key, {})
+
+    @property
+    def name(self) -> str:
+        return self.definition['name']
+
+    @property
+    def description(self) -> str:
+        return self.definition['description']
 
     def get_stats(self, key: str | None = None) -> dict:
         if key is None:
@@ -72,11 +80,17 @@ class Plugin:
 class CpuPlugin(Plugin):
     definition = {
         'name': 'cpu',
+        'description': 'CPU plugin',
         'fields': {
             'total': {
-                'description': 'CPU Total Usage',
+                'description': 'Total CPU Usage',
                 'unit': '%',
                 'retention': 3
+            },
+            'system': {
+                'description': 'System CPU Usage',
+                'unit': '%',
+                # 'retention': 0
             }
         }
     }
@@ -88,6 +102,7 @@ class CpuPlugin(Plugin):
 class NetworkPlugin(Plugin):
     definition = {
         'name': 'network',
+        'description': 'Network plugin',
         'key': 'interface',
         'fields': {
             'bytes_recv': {
