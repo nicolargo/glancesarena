@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
+import asyncio
 import time
 
 import psutil
 
 
-class GlancesPlugin(object):
+class GlancesPlugin:
     def __init__(self):
         """Init the plugin."""
         # Init stats definition (self.stats_def)
@@ -51,7 +52,7 @@ class GlancesPlugin(object):
     def stats(self):
         return self._stats
 
-    def update(self):
+    async def update(self):
         # Stats
         #######
 
@@ -59,7 +60,9 @@ class GlancesPlugin(object):
         self._stats_previous = self._stats
 
         # Stats ET(not L)
-        self.grab_stats()
+        # Offload blocking psutil/glances calls to a thread so they
+        # don't block the event loop and plugins can collect in parallel
+        await asyncio.to_thread(self.grab_stats)
         self.add_metadata()
         self.transform()
 
