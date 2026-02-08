@@ -14,18 +14,21 @@ from plugin_swap import swap
 
 
 async def glances_stats(plugin, refresh=2):
+    """Collect stats for a single plugin, respecting the refresh interval."""
     start = time.perf_counter()
-    plugin.update()
+    await plugin.update()
     ret = plugin.get
     elapsed = time.perf_counter() - start
     if elapsed > refresh:
-        print('WARNING: refresh time is too short ({}s)'.format(elapsed))
+        print('WARNING: {} refresh too slow ({:.2f}s > {}s)'.format(
+            ret['name'], elapsed, refresh))
     else:
         await asyncio.sleep(refresh - elapsed)
     return ret
 
 
 async def main():
+    """Run one collection cycle: all plugins collect in parallel."""
     # name_list = ['cpu', 'percpu', 'mem', 'swap', 'network', 'process']
     name_list = ['cpu', 'network']
     plugins_list = [getattr(sys.modules[__name__], s) for s in name_list]
@@ -38,9 +41,14 @@ async def main():
         print()
 
 
-if __name__ == "__main__":
+async def run_forever():
+    """Persistent event loop — avoids recreating the loop each cycle."""
     while True:
         start = time.perf_counter()
-        asyncio.run(main())
+        await main()
         elapsed = time.perf_counter() - start
         print(f"{__file__} executed in {elapsed:0.2f} seconds.")
+
+
+if __name__ == "__main__":
+    asyncio.run(run_forever())
