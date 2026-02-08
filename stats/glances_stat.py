@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
+from sampling import sample_history
 
 
 @dataclass
@@ -35,17 +37,35 @@ class Stat:
                 self.history.pop(0)
             self.history.append((datetime.now(), self.value))
 
-    def mean(self) -> float | None:
+    def min(self, period_seconds: int = 1,
+            start_date: Optional[datetime] = None,
+            end_date: Optional[datetime] = None) -> List[Tuple[datetime, float]] | None:
         if len(self.history) == 0:
             return None
-        return sum([x[1] for x in self.history]) / len(self.history)
+        return sample_history(self.history,
+                              period_seconds=period_seconds,
+                              start_date=start_date,
+                              end_date=end_date,
+                              aggregation='min')
 
-    def max(self) -> float | None:
+    def max(self, period_seconds: int = 1,
+            start_date: Optional[datetime] = None,
+            end_date: Optional[datetime] = None) -> List[Tuple[datetime, float]] | None:
         if len(self.history) == 0:
             return None
-        return max([x[1] for x in self.history])
+        return sample_history(self.history,
+                              period_seconds=period_seconds,
+                              start_date=start_date,
+                              end_date=end_date,
+                              aggregation='max')
 
-    def min(self) -> float | None:
+    def mean(self, period_seconds: int = 1,
+             start_date: Optional[datetime] = None,
+             end_date: Optional[datetime] = None) -> List[Tuple[datetime, float]] | None:
         if len(self.history) == 0:
             return None
-        return min([x[1] for x in self.history])
+        return sample_history(self.history,
+                              period_seconds=period_seconds,
+                              start_date=start_date,
+                              end_date=end_date,
+                              aggregation='mean')
