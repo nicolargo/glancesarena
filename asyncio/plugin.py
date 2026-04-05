@@ -242,6 +242,7 @@ class GlancesPlugin:
             return
         for key in self.stats_def["transform"]["gauge"]:
             if isinstance(self._stats, list):
+                print("Here i am")
                 for count, stat in enumerate(self._stats):
                     if key in stat and self._object["time_since_update"] is not None:
                         stat[key + "_rate"] = (

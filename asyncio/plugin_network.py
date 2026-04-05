@@ -24,7 +24,10 @@ class Network(GlancesPlugin):
                 "args": {"pernic": True},
                 "key": "interface_name",
             },
-            {"name": "net_if_stats", "key": "interface_name"},
+            {
+                "name": "net_if_stats",
+                "key": "interface_name"
+            },
         ]
 
         # Transform the stats
